@@ -324,7 +324,7 @@ __ProcessFrames(LPVOID pParam)
         return -1;
     }
 #else
-    classifier = static_cast<CvHaarClassifierCascade *>(cvLoad("D:\\GitHub\\bioapp\\videotools\\haarcascade_frontalface_alt2.xml"));
+    classifier = static_cast<CvHaarClassifierCascade *>(cvLoad("haarcascade_frontalface_alt2.xml"));
     if (classifier == nullptr) {
         SendMessage(p->hMainWnd, WM_FRAME_STOP, 0, 0);
         return -1;

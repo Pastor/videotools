@@ -11,7 +11,12 @@
 #if CACHE
   // define hash_map,  current implementations are compiler dependent (2013)
   #ifdef _MSC_VER // microsoft
-    #include <hash_map>
+    #if _MSC_VER >= 1900
+      #define _SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS
+      #include <hash_map>      
+    #else
+      #include <hash_map>
+    #endif
     using namespace stdext;
   #else          // assume gcc
     #include <ext/hash_map>

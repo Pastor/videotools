@@ -27,7 +27,14 @@ INT
 ProcessFrame(VideoPluginFrameContext *frameContext)
 {
     cv::Mat mat = cv::cvarrToMat(frameContext->frame);
-    /**TODO: А теперь работаем с кадром */
+	
+	if (frameContext->seqFaces != nullptr && frameContext->seqFaces->total > 0) {
+		/**Лицо найдено в количестве бельше нуля. Берем первый */
+		auto rect = reinterpret_cast<CvRect *>(cvGetSeqElem(frameContext->seqFaces, 0));
+		auto realRect = cv::Rect(rect->x, rect->y, rect->width, rect->height);
+		/** realRect - это область лица */
+		/**TODO: А теперь работаем с кадром */
+	}    
     return TRUE;
 }
 
