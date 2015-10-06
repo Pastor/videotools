@@ -23,8 +23,8 @@ extern "C" {
 #endif
 
 //-------------------------------------------------
-static cv::CascadeClassifier m_facesClassifier;
-static cv::CascadeClassifier m_eyesClassifier;
+//static cv::CascadeClassifier m_facesClassifier;
+//static cv::CascadeClassifier m_eyesClassifier;
 
 typedef float real;
 
@@ -32,7 +32,7 @@ static void __calculateHistogram(const cv::Mat &inputImage, real *blue, real *gr
 static real __calculateGlobalContrast(const cv::Mat &inputImage);
 static real __calculateSharpness(const cv::Mat &inputImage);
 static real __calculateSNR(const cv::Mat &inputImage);
-static real __calculateEyesDistance(const cv::Mat &inputImage);
+//static real __calculateEyesDistance(const cv::Mat &inputImage);
 //-------------------------------------------------
 
 
