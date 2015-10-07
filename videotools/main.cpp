@@ -3,6 +3,8 @@
 #include <strsafe.h>
 #include <shlobj.h>
 #include <Dbt.h>
+#include <shlobj.h>
+#include <Shlwapi.h>
 
 #include <logger.h>
 #include <videoplugin.h>
@@ -324,7 +326,15 @@ __ProcessFrames(LPVOID pParam)
         return -1;
     }
 #else
-    classifier = static_cast<CvHaarClassifierCascade *>(cvLoad("haarcascade_frontalface_alt2.xml"));
+	{
+		/*TODO: Переписать */
+		char szBuffer[1024 + 40];
+
+		GetModuleFileNameA(nullptr, szBuffer, sizeof(szBuffer) - 40);
+		PathRemoveFileSpecA(szBuffer);
+		PathCombineA(szBuffer, szBuffer, "haarcascade_frontalface_alt2.xml");
+		classifier = static_cast<CvHaarClassifierCascade *>(cvLoad(szBuffer));
+	}    
     if (classifier == nullptr) {
         SendMessage(p->hMainWnd, WM_FRAME_STOP, 0, 0);
         return -1;
