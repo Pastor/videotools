@@ -128,7 +128,6 @@ void __calculateHistogram(const cv::Mat &input, real *blue, real *green, real *r
 
 real __calculateGlobalContrast(const cv::Mat &inputImage)
 {
-<<<<<<< HEAD
 	real blue[256], green[256], red[256];
 	real meanBlue = 0.0;
 	real meanGreen = 0.0;
