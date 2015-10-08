@@ -1,8 +1,15 @@
-//#include <opencv2/core/types_c.h>
+#include <strsafe.h>
+#include <shlobj.h>
+#include <Dbt.h>
+#include <shlobj.h>
+#include <Shlwapi.h>
 #include <xstring.h>
 #include "plugin.h"
+#include <opencv2/objdetect.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs/imgcodecs_c.h>
+
+#pragma comment(lib, "shlwapi.lib")
 
 typedef float real;
 
@@ -12,6 +19,26 @@ static real __calculateSharpness(const cv::Mat &inputImage);
 static real __calculateSNR(const cv::Mat &inputImage);
 static real __calculateEyesDistance(const cv::Mat &inputImage);
 
+struct EyesContext {
+	cv::CascadeClassifier *left;
+	cv::CascadeClassifier *right;
+};
+
+
+static void 
+__FreeEyesContext(LPVOID *ctx)
+{
+	if (ctx != nullptr && *ctx != nullptr) {
+		if (((struct EyesContext *)(*ctx))->left != nullptr)
+			delete ((struct EyesContext *)(*ctx))->left;
+		((struct EyesContext *)(*ctx))->left = nullptr;
+		if (((struct EyesContext *)(*ctx))->right != nullptr)
+			delete ((struct EyesContext *)(*ctx))->right;
+		((struct EyesContext *)(*ctx))->right = nullptr;
+		LocalFree(*ctx);
+		*ctx = nullptr;
+	}
+}
 
 INT
 LoadPlugin(VideoPlugin *pc)
@@ -37,12 +64,17 @@ ProcessFrame(VideoPluginFrameContext *frameContext)
 {
     cv::Mat mat = cv::cvarrToMat(frameContext->frame);
     if (frameContext->seqFaces != nullptr && frameContext->seqFaces->total > 0) {
-        /**Лицо найдено в количестве больше нуля. Берем первый */
+        /**MESSAGE: Лицо найдено в количестве больше нуля. Берем первый */
 	    auto rect = reinterpret_cast<CvRect *>(cvGetSeqElem(frameContext->seqFaces, 0));
 	    auto realRect = cv::Rect(rect->x, rect->y, rect->width, rect->height);
-	    /** realRect - это область лица */
+	    /**MESSAGE: realRect - это область лица */
+		cv::Mat realFace(mat, realRect);
+
+		cv::CascadeClassifier *left = ((struct EyesContext *)frameContext->plugin->pUserContext)->left;
+		cv::CascadeClassifier *right = ((struct EyesContext *)frameContext->plugin->pUserContext)->right;
+		/**MESSAGE: Начинаем работать с глазами */
     }
-    /*TODO: Расчеты */	
+    /*MESSAGE: Расчеты */	
     real contrast = __calculateGlobalContrast(mat);
     real sharpness = __calculateSharpness(mat);
     real snr = __calculateSNR(mat);
@@ -55,12 +87,38 @@ ProcessFrame(VideoPluginFrameContext *frameContext)
 INT
 StartProcess(VideoPluginStartContext *startContext)
 {
+	__FreeEyesContext(&startContext->plugin->pUserContext);
+	startContext->plugin->pUserContext = LocalAlloc(LPTR, sizeof(struct EyesContext));
+	RtlSecureZeroMemory(startContext->plugin->pUserContext, sizeof(struct EyesContext));
+	((struct EyesContext *)startContext->plugin->pUserContext)->left = new cv::CascadeClassifier();
+	((struct EyesContext *)startContext->plugin->pUserContext)->right = new cv::CascadeClassifier();
+	/**TODO: Загружаем */
+	{
+		char szBuffer[1024 + 40];
+		bool ret;
+
+		GetModuleFileNameA(nullptr, szBuffer, sizeof(szBuffer) - 40);
+		PathRemoveFileSpecA(szBuffer);
+		PathCombineA(szBuffer, szBuffer, "haarcascade_mcs_lefteye.xml");
+		ret = ((struct EyesContext *)startContext->plugin->pUserContext)->left->load(szBuffer);
+		if (!ret) {
+			/**FIXME: Ошибка загрузки левого */
+		}
+		GetModuleFileNameA(nullptr, szBuffer, sizeof(szBuffer) - 40);
+		PathRemoveFileSpecA(szBuffer);
+		PathCombineA(szBuffer, szBuffer, "haarcascade_mcs_righteye.xml");
+		ret = ((struct EyesContext *)startContext->plugin->pUserContext)->right->load(szBuffer);
+		if (!ret) {
+			/**FIXME: Ошибка загрузки правого */
+		}
+	}
 	return TRUE;
 }
 
 INT
 StopProcess(VideoPluginStartContext *startContext)
 {
+	__FreeEyesContext(&startContext->plugin->pUserContext);
     return TRUE;
 }
 
@@ -159,9 +217,9 @@ real __calculateGlobalContrast(const cv::Mat &inputImage)
 real __calculateSharpness(const cv::Mat &inputImage)
 {
 	cv::Mat tempImage;
-	cv::Sobel(inputImage, tempImage, cv::CV_8U, 1, 1);
+	cv::Sobel(inputImage, tempImage, CV_8U, 1, 1);
 	cv::Scalar v_sharp = cv::sum(tempImage);
-	real sharpness = std::sqrt((v_sharp[0]*v_sharp[0] + v_sharp[1]*v_sharp[1] + v_sharp[2]*v_sharp[2]))/(input.cols * input.rows * 255.0);
+	real sharpness = std::sqrt((v_sharp[0] * v_sharp[0] + v_sharp[1] * v_sharp[1] + v_sharp[2] * v_sharp[2]))/(inputImage.cols * inputImage.rows * 255.0);
 	return sharpness;
 }
 
@@ -171,7 +229,7 @@ real __calculateSNR(const cv::Mat &inputImage)
     cv::Laplacian(inputImage, tempImage, CV_8U);
     cv::Scalar v_stDev;
     cv::meanStdDev(tempImage, cv::Scalar(), v_stDev);
-    real snr = 20.0 * std::log10(255.0 / std::sqrt(v_stDev[0]*v_stDev[0] + v_stDev[1]*v_stDev[1] + v_stDev[2]*v_stDev[2]));
+    real snr = 20.0 * std::log10(255.0 / std::sqrt(v_stDev[0] * v_stDev[0] + v_stDev[1] * v_stDev[1] + v_stDev[2] * v_stDev[2]));
 	return snr;
 }
 
