@@ -37,7 +37,7 @@ ProcessFrame(VideoPluginFrameContext *frameContext)
 {
     cv::Mat mat = cv::cvarrToMat(frameContext->frame);
     if (frameContext->seqFaces != nullptr && frameContext->seqFaces->total > 0) {
-        /**Лицо найдено в количестве бельше нуля. Берем первый */
+        /**Лицо найдено в количестве больше нуля. Берем первый */
 	    auto rect = reinterpret_cast<CvRect *>(cvGetSeqElem(frameContext->seqFaces, 0));
 	    auto realRect = cv::Rect(rect->x, rect->y, rect->width, rect->height);
 	    /** realRect - это область лица */
@@ -48,16 +48,13 @@ ProcessFrame(VideoPluginFrameContext *frameContext)
     real snr = __calculateSNR(mat);
     real eyeDistance = __calculateEyesDistance(mat);
     //TODO: куда результаты вычислений отдавать?
+
     return TRUE;
 }
 
 INT
 StartProcess(VideoPluginStartContext *startContext)
 {
-    //FIXME: Мы можем загружать файлы в объекты здесь?
-	//m_facesClassifier.load("haarcascades/haarcascade_frontalface_alt.xml"); // Нужно будет добавить эти файлы к проекту
-	//m_eyesClassifier.load("haarcascades/haarcascade_eye.xml");
-	
 	return TRUE;
 }
 
@@ -131,6 +128,7 @@ void __calculateHistogram(const cv::Mat &input, real *blue, real *green, real *r
 
 real __calculateGlobalContrast(const cv::Mat &inputImage)
 {
+<<<<<<< HEAD
 	real blue[256], green[256], red[256];
 	real meanBlue = 0.0;
 	real meanGreen = 0.0;
@@ -138,37 +136,44 @@ real __calculateGlobalContrast(const cv::Mat &inputImage)
 	real skoBlue = 0.0;
 	real skoGreen = 0.0;
 	real skoRed = 0.0;
-
-
-	__calculateHistogram(inputImage, blue, green, red);
-	for (int i = 0; i < 256; i++) {
-		meanBlue += blue[i];
-		meanGreen += green[i];
-		meanRed += red[i];
-	}
-	meanBlue /= 256.0;
-	meanGreen /= 256.0;
-	meanRed /= 256.0;  
+	real area = inputImage.cols * inputImage.rows;
 	
-	for (int i = 0; i < 256; i++) {
-		skoBlue += (blue[i] - meanBlue) * (blue[i] - meanBlue);
-		skoGreen += (green[i] - meanGreen) * (green[i] - meanGreen);
-		skoRed += (red[i] - meanRed) * (red[i] - meanRed);
+	__calculateHistogram(inputImage, blue, green, red);
+	for(int i = 0; i < 256; i++) {
+		meanBlue += i * blue[i];
+		meanGreen += i * green[i];
+		meanRed += i * red[i];
 	}
-	auto contrast = static_cast<real>(std::sqrt((skoBlue + skoGreen + skoRed) / 255.0));
-	return static_cast<real>(contrast / 256.0);
+	meanBlue /= area;
+	meanGreen /= area;
+	meanRed /= area;  
+	
+	for(int i = 0; i < 256; i++) {
+		skoBlue += (i - meanBlue)*(i - meanBlue)*blue[i];
+		skoGreen += (i - meanGreen)*(i - meanGreen)*green[i];
+		skoRed += (i - meanRed)*(i - meanRed)*red[i];
+	}
+	auto contrast = static_cast<real>( std::sqrt((skoBlue + skoGreen + skoRed) / area) / 255.0 );
+	return static_cast<real>(contrast);
 }
 
 real __calculateSharpness(const cv::Mat &inputImage)
 {
-	//TODO 
-	return 0.0;
+	cv::Mat tempImage;
+	cv::Sobel(inputImage, tempImage, cv::CV_8U, 1, 1);
+	cv::Scalar v_sharp = cv::sum(tempImage);
+	real sharpness = std::sqrt((v_sharp[0]*v_sharp[0] + v_sharp[1]*v_sharp[1] + v_sharp[2]*v_sharp[2]))/(input.cols * input.rows * 255.0);
+	return sharpness;
 }
 
 real __calculateSNR(const cv::Mat &inputImage)
 {
-	//TODO 
-	return 0.0;
+	cv::Mat tempImage;
+    cv::Laplacian(inputImage, tempImage, CV_8U);
+    cv::Scalar v_stDev;
+    cv::meanStdDev(tempImage, cv::Scalar(), v_stDev);
+    real snr = 20.0 * std::log10(255.0 / std::sqrt(v_stDev[0]*v_stDev[0] + v_stDev[1]*v_stDev[1] + v_stDev[2]*v_stDev[2]));
+	return snr;
 }
 
 real __calculateEyesDistance(const cv::Mat &inputImage)
