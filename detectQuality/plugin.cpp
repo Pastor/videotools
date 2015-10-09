@@ -5,6 +5,7 @@
 #include <Shlwapi.h>
 #include <xstring.h>
 #include "plugin.h"
+#include <haar.h>
 #include <opencv2/objdetect.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs/imgcodecs_c.h>
@@ -19,40 +20,30 @@
 #include <opencv2/videoio/videoio_c.h>
 
 #pragma comment(lib, "shlwapi.lib")
-
-#define USE_CPP_HAAR
+#pragma comment(lib, "libcommon.lib")
 
 typedef float real;
+
+struct EyesContext {
+	CvHaarClassifierCascade *left;
+	CvHaarClassifierCascade *right;
+	CvMemStorage            *storage;
+};
 
 static void __calculateHistogram(const cv::Mat &inputImage, real *blue, real *green, real *red);
 static real __calculateGlobalContrast(const cv::Mat &inputImage);
 static real __calculateSharpness(const cv::Mat &inputImage);
 static real __calculateSNR(const cv::Mat &inputImage);
 static real __calculateEyesDistance(const cv::Point_<real> &leftEyeCenter, const cv::Point_<real> &rightEyeCenter);
-static bool __searchEyes(const cv::Mat &inputFace, cv::CascadeClassifier *left, cv::CascadeClassifier *right, cv::Point_<real> &leftEye, cv::Point_<real> &rightEye);
-
-struct EyesContext {
-#if defined(USE_CPP_HAAR)
-	cv::CascadeClassifier *left;
-	cv::CascadeClassifier *right;
-#else
-	/** C-style*/
-	CvHaarClassifierCascade *left;
-	CvHaarClassifierCascade *right;
-	CvMemStorage            *storage;
-#endif
-};
+static bool __searchEyes(const cv::Mat &inputFace, struct EyesContext *ctx, cv::Point_<real> &leftEye, cv::Point_<real> &rightEye);
 
 static void
 __FreeEyesContext(LPVOID *ctx)
 {
 	if (ctx != nullptr && *ctx != nullptr) {
-		if (((struct EyesContext *)(*ctx))->left != nullptr)
-			delete ((struct EyesContext *)(*ctx))->left;
-		((struct EyesContext *)(*ctx))->left = nullptr;
-		if (((struct EyesContext *)(*ctx))->right != nullptr)
-			delete ((struct EyesContext *)(*ctx))->right;
-		((struct EyesContext *)(*ctx))->right = nullptr;
+		cvReleaseHaarClassifierCascade(&(((struct EyesContext *)ctx)->left));
+		cvReleaseHaarClassifierCascade(&(((struct EyesContext *)ctx)->right));
+		cvReleaseMemStorage(&(((struct EyesContext *)ctx)->storage));
 		LocalFree(*ctx);
 		*ctx = nullptr;
 	}
@@ -84,8 +75,8 @@ ProcessFrame(VideoPluginFrameContext *frameContext)
 
 	real eyesDistance = -1.0;
 	if (frameContext->seqFaces != nullptr && frameContext->seqFaces->total > 0) {
-		cv::CascadeClassifier *left = ((struct EyesContext *)frameContext->plugin->pUserContext)->left;
-		cv::CascadeClassifier *right = ((struct EyesContext *)frameContext->plugin->pUserContext)->right;
+		auto left = ((struct EyesContext *)frameContext->plugin->pUserContext)->left;
+		auto right = ((struct EyesContext *)frameContext->plugin->pUserContext)->right;
 
 		if (left != nullptr && right != nullptr) {
 			auto rect = reinterpret_cast<CvRect *>(cvGetSeqElem(frameContext->seqFaces, 0));
@@ -93,7 +84,7 @@ ProcessFrame(VideoPluginFrameContext *frameContext)
 			cv::Mat realFace(mat, realRect);
 
 			cv::Point_<real> leftEye, rightEye;
-			if (__searchEyes(realFace, left, right, leftEye, rightEye)) {
+			if (__searchEyes(realFace, ((struct EyesContext *)frameContext->plugin->pUserContext), leftEye, rightEye)) {
 				eyesDistance = __calculateEyesDistance(leftEye, rightEye);
 			}
 		}
@@ -122,27 +113,22 @@ StartProcess(VideoPluginStartContext *startContext)
 		GetModuleFileNameA(nullptr, szBuffer, sizeof(szBuffer) - 40);
 		PathRemoveFileSpecA(szBuffer);
 		PathCombineA(szBuffer, szBuffer, "haarcascade_mcs_lefteye.xml");
-		((struct EyesContext *)startContext->plugin->pUserContext)->left = new cv::CascadeClassifier();
-		ret = ((struct EyesContext *)startContext->plugin->pUserContext)->left->load(szBuffer);
-		if (!ret && ((struct EyesContext *)startContext->plugin->pUserContext)->left->empty()) {
+		((struct EyesContext *)startContext->plugin->pUserContext)->left = static_cast<CvHaarClassifierCascade *>(cvLoad(szBuffer));
+		if (((struct EyesContext *)startContext->plugin->pUserContext)->left == nullptr) {
 			/**FIXME: Ошибка загрузки левого */
-			delete ((struct EyesContext *)startContext->plugin->pUserContext)->left;
-			((struct EyesContext *)startContext->plugin->pUserContext)->left = nullptr;
+			
 			return FALSE;
 		}
 		GetModuleFileNameA(nullptr, szBuffer, sizeof(szBuffer) - 40);
 		PathRemoveFileSpecA(szBuffer);
 		PathCombineA(szBuffer, szBuffer, "haarcascade_mcs_righteye.xml");
-		((struct EyesContext *)startContext->plugin->pUserContext)->right = new cv::CascadeClassifier();
-		ret = ((struct EyesContext *)startContext->plugin->pUserContext)->right->load(szBuffer);
-		if (!ret && ((struct EyesContext *)startContext->plugin->pUserContext)->right->empty()) {
+		((struct EyesContext *)startContext->plugin->pUserContext)->right = static_cast<CvHaarClassifierCascade *>(cvLoad(szBuffer));
+		if (((struct EyesContext *)startContext->plugin->pUserContext)->right == nullptr) {
 			/**FIXME: Ошибка загрузки правого */
-			delete ((struct EyesContext *)startContext->plugin->pUserContext)->left;
-			((struct EyesContext *)startContext->plugin->pUserContext)->left = nullptr;
-			delete ((struct EyesContext *)startContext->plugin->pUserContext)->right;
-			((struct EyesContext *)startContext->plugin->pUserContext)->right = nullptr;
+			cvReleaseHaarClassifierCascade(&((struct EyesContext *)startContext->plugin->pUserContext)->left);
 			return FALSE;
 		}
+		((struct EyesContext *)startContext->plugin->pUserContext)->storage = cvCreateMemStorage(0);
 	}
 	return TRUE;
 }
@@ -271,7 +257,7 @@ real __calculateEyesDistance(const cv::Point_<real> &leftEyeCenter, const cv::Po
 	return std::sqrt(difference.x * difference.x + difference.y * difference.y);
 }
 
-bool __searchEyes(const cv::Mat &face, cv::CascadeClassifier *left, cv::CascadeClassifier *right, cv::Point_<real> &leftEye, cv::Point_<real> &rightEye)
+bool __searchEyes(const cv::Mat &face, struct EyesContext *ctx, cv::Point_<real> &leftEye, cv::Point_<real> &rightEye)
 {
 	cv::Size minEyeSize(20, 20);
 	std::vector<cv::Rect> v_eyes;
@@ -279,7 +265,7 @@ bool __searchEyes(const cv::Mat &face, cv::CascadeClassifier *left, cv::CascadeC
 	cv::Rect roi(0, 0, face.cols / 2, face.rows / 2);
 	cv::Mat topLeftPart(face, roi);
 
-	left->detectMultiScale(topLeftPart, v_eyes, 1.05, 11, cv::CASCADE_FIND_BIGGEST_OBJECT, minEyeSize);
+	__Detect(ctx->left, ctx->storage, &(IplImage)face, v_eyes, nullptr, 1.05, 11, 0 | CV_HAAR_FIND_BIGGEST_OBJECT, 20, 20);
 	if (v_eyes.size() > 0) {
 		leftEye = cv::Point_<real>(v_eyes[0].x + (real)v_eyes[0].width / 2.0, v_eyes[0].y + (real)v_eyes[0].height / 2.0);
 	} else {
@@ -288,7 +274,7 @@ bool __searchEyes(const cv::Mat &face, cv::CascadeClassifier *left, cv::CascadeC
 	v_eyes.clear();
 	roi = roi + cv::Point(face.cols / 2, 0);
 	cv::Mat topRightPart(face, roi);
-	right->detectMultiScale(topRightPart, v_eyes, 1.05, 11, cv::CASCADE_FIND_BIGGEST_OBJECT, minEyeSize);
+	__Detect(ctx->right, ctx->storage, &(IplImage)face, v_eyes, nullptr, 1.05, 11, 0 | CV_HAAR_FIND_BIGGEST_OBJECT, 20, 20);
 	if (v_eyes.size() > 0) {
 		v_eyes[0] = v_eyes[0] + cv::Point(face.cols / 2, 0);
 		rightEye = cv::Point_<real>(v_eyes[0].x + (real)v_eyes[0].width / 2.0, v_eyes[0].y + (real)v_eyes[0].height / 2.0);

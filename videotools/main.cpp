@@ -8,6 +8,7 @@
 
 #include <logger.h>
 #include <videoplugin.h>
+#include <haar.h>
 
 #include <opencv2/core/core_c.h>
 #include <opencv2/core.hpp>
@@ -211,61 +212,6 @@ struct tagProcessFramesParam
 };
 typedef struct tagProcessFramesParam ProcessFramesParam;
 static volatile bool gProcessFramesRuning = false;
-
-#if defined(USE_CPP_HAAR)
-static void
-__Detect(cv::CascadeClassifier &classifier, IplImage *i, std::vector<cv::Rect> &faces)
-{
-    auto frame = cv::cvarrToMat(i);
-    cv::Mat gray;
-    cv::Mat frameCopy;
-
-    faces.clear();
-    if (frame.empty())
-        return;
-    if (i->origin == IPL_ORIGIN_TL) {
-        frame.copyTo(frameCopy);
-    } else {
-        cv::flip(frame, frameCopy, 0);
-    }
-    try {
-        cv::cvtColor(frameCopy, gray, cv::COLOR_BGR2GRAY);
-        cv::equalizeHist(gray, gray);
-        faces.clear();
-        classifier.detectMultiScale(gray, faces, 1.1, 2, 0 | cv::CASCADE_SCALE_IMAGE/*cv::CASCADE_DO_ROUGH_SEARCH | cv::CASCADE_FIND_BIGGEST_OBJECT*/ /*| cv::CASCADE_DO_CANNY_PRUNING*/, cv::Size(OBJECT_MINSIZE, OBJECT_MINSIZE));
-    } catch (...) {
-        __asm nop;
-    }
-}
-#else
-static void
-__Detect(CvHaarClassifierCascade * classifier, CvMemStorage* storage, IplImage *i, std::vector<cv::Rect> &faces, CvSeq **seqFaces = nullptr)
-{
-    CvSeq *finded;
-    IplImage *detect;
-    IplImage *gray = nullptr;
-
-    detect = i;
-    if (i->nChannels > 1) {
-        auto size = cvSize(i->width, i->height);
-        gray = cvCreateImage(size, IPL_DEPTH_8U, 1);
-        cvCvtColor(i, gray, CV_BGR2GRAY);
-        detect = gray;
-    }
-    faces.clear();
-    finded = cvHaarDetectObjects(detect, classifier, storage, 1.1, 6, 0 | CV_HAAR_DO_ROUGH_SEARCH | CV_HAAR_FIND_BIGGEST_OBJECT, cvSize(OBJECT_MINSIZE, OBJECT_MINSIZE));
-    if (finded != nullptr && finded->total > 0) {
-        for (auto k = 0; k < finded->total; ++k) {
-            auto rect = reinterpret_cast<CvRect *>(cvGetSeqElem(finded, k));
-            faces.push_back(cv::Rect(rect->x, rect->y, rect->width, rect->height));
-        }
-    }
-    if (gray != nullptr)
-        cvReleaseImage(&gray);
-    if (seqFaces)
-        (*seqFaces) = finded;
-}
-#endif
 
 static void
 __PluginsStart(VideoPluginStartContext *ctx)
