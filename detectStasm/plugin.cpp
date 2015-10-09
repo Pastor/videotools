@@ -1,9 +1,12 @@
-//#include <opencv2/core/types_c.h>
+#define _CRT_SECURE_NO_WARNINGS
 #include <xstring.h>
+#include <properties.h>
 #include "plugin.h"
 #include "stasm_lib.h"
 #include "stasm.h"
 #include <opencv2/imgcodecs/imgcodecs_c.h>
+
+#pragma comment(lib, "libcommon.lib")
 
 typedef std::vector<stasm::DetPar> vec_DetPar;
 
@@ -20,6 +23,7 @@ LoadPlugin(VideoPlugin *pc)
     pc->pProcessFrame = reinterpret_cast<pfnProcessFrame>(ProcessFrame);
     pc->pStartProcess = reinterpret_cast<pfnStartProcess>(StartProcess);
     pc->pStopProcess = reinterpret_cast<pfnStopProcess>(StopProcess);
+    pc->isActive = pc->prop->getBoolean("plugins.stasm.enabled", true);
     return TRUE;
 }
 

@@ -7,7 +7,20 @@
 #include <cstdlib>
 #include <strsafe.h>
 #include <Windows.h>
+#include <mutex>
 #include "logger.h"
+
+static void
+__SafeClose(FILE **fd)
+{
+    __try {
+        if (*fd != nullptr)
+            fclose(*fd);
+        *fd = nullptr;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+
+    }
+}
 
 class LoggerPrivate
 {
@@ -23,9 +36,7 @@ public:
     }
     bool close()
     {
-        if (fd)
-            fclose(fd);
-        fd = nullptr;
+        __SafeClose(&fd);
         return true;
     }
     bool free()

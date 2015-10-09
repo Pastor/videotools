@@ -22,7 +22,7 @@ typedef INT(*pfnProcessFrame)(struct _VideoPluginFrameContext *frameContext);
 
 typedef INT(*pfnStartProcess)(struct _VideoPluginStartContext *startContext);
 
-typedef INT(*pfnStopProcess)(struct _VideoPluginStartContent *startContext);
+typedef INT(*pfnStopProcess)(struct _VideoPluginStartContext *startContext);
 
 /** */
 
@@ -37,6 +37,7 @@ struct _VideoPlugin
     int              isActive;
     DWORD            dwMenuId;
     Properties      *prop;
+    Logger          *logger;
 
     pfnLoadPlugin    pLoad;
     pfnFreePlugin    pFree;
@@ -55,6 +56,7 @@ struct _VideoPluginFrameContext
     CvSeq               *seqFaces;
     VideoPlugin         *plugin;
     Properties          *prop;
+    Logger              *logger;
 };
 typedef struct _VideoPluginFrameContext VideoPluginFrameContext;
 
@@ -62,6 +64,7 @@ struct _VideoPluginStartContext
 {
     VideoPlugin         *plugin;
     HWND                 hMainWnd;
+    LPCSTR               pFileName;
 };
 typedef struct _VideoPluginStartContext VideoPluginStartContext;
 

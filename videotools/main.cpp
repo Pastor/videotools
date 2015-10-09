@@ -43,6 +43,7 @@
 
 #define OBJECT_MINSIZE   80
 #include <properties.h>
+#include "../3rdparty/sqlite3/sqlite3.h"
 
 static Logger *gLogger = nullptr;
 static Properties *gProp = nullptr;
@@ -63,6 +64,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
     float                   delta;
     int                     iFrame;
 
+    sqlite3_initialize();
     gLogger = new Logger("videotools.log");
     gProp = new Properties(gLogger);
     gProp->load("settings.properties");
@@ -207,9 +209,10 @@ typedef struct tagFrameInfo FrameInfo;
 
 struct tagProcessFramesParam 
 {
-    CvCapture  *cvCapture;
+    CvCapture   *cvCapture;
     Properties  *prop;
     HWND        hMainWnd;
+    LPCSTR      pFileName;
 };
 typedef struct tagProcessFramesParam ProcessFramesParam;
 static volatile bool gProcessFramesRuning = false;
@@ -225,6 +228,19 @@ __PluginsStart(VideoPluginStartContext *ctx)
             ( *(*it)->pStartProcess )(ctx);
     }
 }
+
+static void
+__PluginsStop(VideoPluginStartContext *ctx)
+{
+    std::lock_guard<std::mutex> locker(gPluginsMutex);
+
+    for (auto it = gPlugins.begin(); it != gPlugins.end(); ++it) {
+        ctx->plugin = (*it);
+        if ((*it)->isActive == TRUE && (*it)->pStartProcess != nullptr)
+            (*(*it)->pStopProcess)(ctx);
+    }
+}
+
 
 static void
 __PluginsProcessFrame(VideoPluginFrameContext *ctx)
@@ -290,6 +306,7 @@ __ProcessFrames(LPVOID pParam)
     storage = cvCreateMemStorage(0);
 #endif
     faces.reserve(1024);
+    ctx.pFileName = p->pFileName;
     __PluginsStart(&ctx);
     dwStartProcess = timeGetTime();
     iFailedFrame = 0;
@@ -305,6 +322,7 @@ __ProcessFrames(LPVOID pParam)
         iFrame = static_cast<int>(cvGetCaptureProperty(p->cvCapture, CV_CAP_PROP_POS_FRAMES));
         frameCtx.iFrame = iFrame;
         frameCtx.frame = i;
+        frameCtx.logger = gLogger;
         fi.iFrame = iFrame;
         fi.iProcessPercent = (iFrame * 100) / iStopFrame;
         dwStartTime = timeGetTime();
@@ -322,6 +340,7 @@ __ProcessFrames(LPVOID pParam)
         SendMessage(p->hMainWnd, WM_FRAME_NEXT, 0, reinterpret_cast<LPARAM>(&fi));
     }
     SendMessage(p->hMainWnd, WM_FRAME_STOP, 0, 0);
+    __PluginsStop(&ctx);
 #if defined(USE_CPP_HAAR)
     //
 #else
@@ -367,6 +386,7 @@ __UpdatePluginsMenu(HMENU hMainMenu)
 INT_PTR CALLBACK
 MainDialog(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    static CHAR  szFileName[MAX_PATH * 2];
     static HINSTANCE hInstance = nullptr;
     static HFONT hFont = nullptr;
     static auto  cDefColor = RGB(240, 240, 240);
@@ -457,8 +477,6 @@ MainDialog(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         case ID_FILE_OPEN: {
             //
             OPENFILENAMEA ofn;
-            CHAR          szFileName[MAX_PATH * 2];
-
             if (cvCapture != nullptr)
                 cvReleaseCapture(&cvCapture);
             RtlSecureZeroMemory(&ofn, sizeof(ofn));
@@ -474,6 +492,7 @@ MainDialog(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 cvCapture = cvCreateFileCapture(ofn.lpstrFile);
                 __VideoInfo(cvCapture, hWnd);
                 threadParam.cvCapture = cvCapture;
+                threadParam.pFileName = szFileName;
                 cQualityColor = RGB(178, 34, 34);
                 SetWindowText(GetDlgItem(hWnd, IDC_START_PROCESS), TEXT("Запуск"));
             }

@@ -3,6 +3,7 @@
 #include <cstring>
 #include <iostream>
 #include <fstream>
+#include <unordered_map>
 #include "xstring.h"
 #include "logger.h"
 #include "properties.h"
@@ -39,7 +40,9 @@ namespace Internal {
         explicit PropertiesPrivate(Logger *_logger)
             : db(nullptr), error(nullptr), ret(0), logger(_logger), 
               hHeap(HeapCreate(HEAP_NO_SERIALIZE, 0, 0))
-        {}
+        {
+            sqlite3_initialize();
+        }
         ~PropertiesPrivate()
         {
             HeapDestroy(hHeap);
@@ -73,7 +76,7 @@ namespace Internal {
         Logger       *logger;
         HANDLE        hHeap;
         std::mutex    mutex;
-
+        std::unordered_map<std::string, std::string> properties;
         friend class Properties;
     };
 
@@ -365,14 +368,14 @@ std::string
 Properties::getString(const char* const szKey, const char* const szDefault)
 {
     std::lock_guard<std::mutex> locker(d->mutex);
-    auto ret = d->getString(szKey);
+    auto ret = d->properties[szKey];// d->getString(szKey);
     return ret.size() > 0 ? ret : std::string(szDefault == nullptr ? "" : szDefault);
 }
 
 std::wstring 
 Properties::getWString(const char* const szKey, const wchar_t* const szDefault)
 {
-    std::lock_guard<std::mutex> locker(d->mutex);
+//    std::lock_guard<std::mutex> locker(d->mutex);
     auto ret = d->getWString(szKey);
     return ret.size() > 0 ? ret : std::wstring(szDefault == nullptr ? L"" : szDefault);
 }
@@ -380,7 +383,7 @@ Properties::getWString(const char* const szKey, const wchar_t* const szDefault)
 void 
 Properties::setString(const char* const szKey, const char* const szValue)
 {
-    std::lock_guard<std::mutex> locker(d->mutex);
+//    std::lock_guard<std::mutex> locker(d->mutex);
     if (!d->add(szKey, szValue))
         d->update(szKey, szValue);
 }
@@ -388,7 +391,7 @@ Properties::setString(const char* const szKey, const char* const szValue)
 void 
 Properties::setString(const char* const szKey, const wchar_t* const szValue)
 {
-    std::lock_guard<std::mutex> locker(d->mutex);
+//    std::lock_guard<std::mutex> locker(d->mutex);
     if (!d->add(szKey, szValue))
         d->update(szKey, szValue);
 }
@@ -396,7 +399,7 @@ Properties::setString(const char* const szKey, const wchar_t* const szValue)
 int 
 Properties::getInteger(const char* const szKey, int iDefault)
 {
-    std::lock_guard<std::mutex> locker(d->mutex);
+//    std::lock_guard<std::mutex> locker(d->mutex);
     std::string::size_type sz;
     auto ret = getString(szKey);
     return ret.size() > 0 ? std::stoi(ret, &sz) : iDefault;
@@ -405,7 +408,7 @@ Properties::getInteger(const char* const szKey, int iDefault)
 bool 
 Properties::getBoolean(const char* const szKey, bool bDefaut)
 {
-    std::lock_guard<std::mutex> locker(d->mutex);
+//    std::lock_guard<std::mutex> locker(d->mutex);
     auto ret = getString(szKey);
     return ret.size() > 0 ? !_stricmp(ret.c_str(), "true") : bDefaut;
 }
@@ -413,7 +416,7 @@ Properties::getBoolean(const char* const szKey, bool bDefaut)
 void 
 Properties::setInteger(const char* const szKey, int iValue)
 {
-    std::lock_guard<std::mutex> locker(d->mutex);
+//    std::lock_guard<std::mutex> locker(d->mutex);
     auto value = std::to_string(iValue);
     if (!d->add(szKey, value.c_str()))
         d->update(szKey, value.c_str());
@@ -453,6 +456,7 @@ Properties::load(const char* const szFileName) const
                 auto value = line.substr(id + 1);
                 key = std::trim(key);                
                 value = std::trim(value);
+                d->properties[key] = value;
                 d->add(key.c_str(), value.c_str());
             }
         }
@@ -469,12 +473,15 @@ Properties::save(const char* const szFileName) const
 
     prop.open(szFileName, std::ios_base::out);
     if (prop.is_open()) {
-        PropertyList list;
-        if (d->list(list)) {
-            for (auto it = list.begin(); it != list.end(); ++it) {
-                auto kv = (*it);
-                prop << kv.first << " = " << kv.second << std::endl;
-            }
+//        PropertyList list;
+//        if (d->list(list)) {
+//            for (auto it = list.begin(); it != list.end(); ++it) {
+//                auto kv = (*it);
+//                prop << kv.first << " = " << kv.second << std::endl;
+//            }
+//        }
+        for (auto it = d->properties.begin(); it != d->properties.end(); ++it) {
+            prop << (*it).first << "=" << (*it).second << std::endl;
         }
         return true;
     }

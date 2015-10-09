@@ -4,6 +4,8 @@
 #include <shlobj.h>
 #include <Shlwapi.h>
 #include <xstring.h>
+#include <logger.h>
+#include <properties.h>
 #include "plugin.h"
 #include <haar.h>
 #include <opencv2/objdetect.hpp>
@@ -24,11 +26,20 @@
 
 typedef float real;
 
+static DWORD dwCtxIndex;
+
 struct EyesContext {
 	CvHaarClassifierCascade *left;
 	CvHaarClassifierCascade *right;
 	CvMemStorage            *storage;
+    Logger                  *logger;
 };
+
+static void
+__Get(struct EyesContext **pCtx)
+{
+    (*pCtx) = static_cast<struct EyesContext *>(TlsGetValue(dwCtxIndex));
+}
 
 static void __calculateHistogram(const cv::Mat &inputImage, real *blue, real *green, real *red);
 static real __calculateGlobalContrast(const cv::Mat &inputImage);
@@ -38,14 +49,25 @@ static real __calculateEyesDistance(const cv::Point_<real> &leftEyeCenter, const
 static bool __searchEyes(const cv::Mat &inputFace, struct EyesContext *ctx, cv::Point_<real> &leftEye, cv::Point_<real> &rightEye);
 
 static void
-__FreeEyesContext(LPVOID *ctx)
+__FreeClassifiers(struct EyesContext *ctx)
 {
-	if (ctx != nullptr && *ctx != nullptr) {
-		cvReleaseHaarClassifierCascade(&(reinterpret_cast<struct EyesContext *>(ctx)->left));
-		cvReleaseHaarClassifierCascade(&(reinterpret_cast<struct EyesContext *>(ctx)->right));
-		cvReleaseMemStorage(&(reinterpret_cast<struct EyesContext *>(ctx)->storage));
-		LocalFree(*ctx);
-		*ctx = nullptr;
+    __try {
+        cvReleaseHaarClassifierCascade(&(ctx->left));
+        cvReleaseHaarClassifierCascade(&(ctx->right));
+        cvReleaseMemStorage(&(ctx->storage));
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+
+    }
+}
+
+static void
+__FreeEyesContext(struct EyesContext *ctx)
+{
+	if (ctx != nullptr) {
+        __FreeClassifiers(ctx);
+        if (ctx->logger != nullptr)
+            delete ctx->logger;
+        ctx->logger = nullptr;
 	}
 }
 
@@ -59,6 +81,7 @@ LoadPlugin(VideoPlugin *pc)
 	pc->pProcessFrame = reinterpret_cast<pfnProcessFrame>(ProcessFrame);
 	pc->pStartProcess = reinterpret_cast<pfnStartProcess>(StartProcess);
 	pc->pStopProcess = reinterpret_cast<pfnStopProcess>(StopProcess);
+    pc->isActive = pc->prop->getBoolean("plugins.quality.enabled", true);
 	return TRUE;
 }
 
@@ -72,11 +95,13 @@ INT
 ProcessFrame(VideoPluginFrameContext *frameContext)
 {
 	cv::Mat mat = cv::cvarrToMat(frameContext->frame);
-
 	real eyesDistance = -1.0;
+    struct EyesContext *ctx;
+
+    __Get(&ctx);
 	if (frameContext->seqFaces != nullptr && frameContext->seqFaces->total > 0) {
-		auto left = static_cast<struct EyesContext *>(frameContext->plugin->pUserContext)->left;
-		auto right = static_cast<struct EyesContext *>(frameContext->plugin->pUserContext)->right;
+		auto left = ctx->left;
+		auto right = ctx->right;
 
 		if (left != nullptr && right != nullptr) {
 			auto rect = reinterpret_cast<CvRect *>(cvGetSeqElem(frameContext->seqFaces, 0));
@@ -84,7 +109,7 @@ ProcessFrame(VideoPluginFrameContext *frameContext)
 			cv::Mat realFace(mat, realRect);
 
 			cv::Point_<real> leftEye, rightEye;
-			if (__searchEyes(realFace, static_cast<struct EyesContext *>(frameContext->plugin->pUserContext), leftEye, rightEye)) {
+			if (__searchEyes(realFace, ctx, leftEye, rightEye)) {
 				eyesDistance = __calculateEyesDistance(leftEye, rightEye);
 			}
 		}
@@ -94,26 +119,29 @@ ProcessFrame(VideoPluginFrameContext *frameContext)
     auto sharpness = __calculateSharpness(mat);
     auto snr = __calculateSNR(mat);
 	//TODO: куда результаты вычислений отдавать?
-
+    ctx->logger->printf(TEXT("Кадр %08d: %08.3f, %08.3f, %08.3f, %08.3f"), frameContext->iFrame, eyesDistance, contrast, sharpness, snr);
 	return TRUE;
 }
 
 INT
 StartProcess(VideoPluginStartContext *startContext)
 {
-	__FreeEyesContext(&startContext->plugin->pUserContext);
-	startContext->plugin->pUserContext = LocalAlloc(LPTR, sizeof(struct EyesContext));
-	RtlSecureZeroMemory(startContext->plugin->pUserContext, sizeof(struct EyesContext));
+    struct EyesContext *ctx;
+
+    __Get(&ctx);
+	RtlSecureZeroMemory(ctx, sizeof(struct EyesContext));
 
 	/**TODO: Загружаем */
+    ctx->logger = new Logger("quality.log");
+    ctx->logger->event();
 	{
 		char szBuffer[1024 + 40];
 
 		GetModuleFileNameA(nullptr, szBuffer, sizeof(szBuffer) - 40);
 		PathRemoveFileSpecA(szBuffer);
 		PathCombineA(szBuffer, szBuffer, "haarcascade_mcs_lefteye.xml");
-		static_cast<struct EyesContext *>(startContext->plugin->pUserContext)->left = static_cast<CvHaarClassifierCascade *>(cvLoad(szBuffer));
-		if (static_cast<struct EyesContext *>(startContext->plugin->pUserContext)->left == nullptr) {
+		ctx->left = static_cast<CvHaarClassifierCascade *>(cvLoad(szBuffer));
+		if (ctx->left == nullptr) {
 			/**FIXME: Ошибка загрузки левого */
 			
 			return FALSE;
@@ -121,13 +149,13 @@ StartProcess(VideoPluginStartContext *startContext)
 		GetModuleFileNameA(nullptr, szBuffer, sizeof(szBuffer) - 40);
 		PathRemoveFileSpecA(szBuffer);
 		PathCombineA(szBuffer, szBuffer, "haarcascade_mcs_righteye.xml");
-		static_cast<struct EyesContext *>(startContext->plugin->pUserContext)->right = static_cast<CvHaarClassifierCascade *>(cvLoad(szBuffer));
-		if (static_cast<struct EyesContext *>(startContext->plugin->pUserContext)->right == nullptr) {
+		ctx->right = static_cast<CvHaarClassifierCascade *>(cvLoad(szBuffer));
+		if (ctx->right == nullptr) {
 			/**FIXME: Ошибка загрузки правого */
-			cvReleaseHaarClassifierCascade(&static_cast<struct EyesContext *>(startContext->plugin->pUserContext)->left);
+			cvReleaseHaarClassifierCascade(&ctx->left);
 			return FALSE;
 		}
-		static_cast<struct EyesContext *>(startContext->plugin->pUserContext)->storage = cvCreateMemStorage(0);
+		ctx->storage = cvCreateMemStorage(0);
 	}
 	return TRUE;
 }
@@ -135,25 +163,43 @@ StartProcess(VideoPluginStartContext *startContext)
 INT
 StopProcess(VideoPluginStartContext *startContext)
 {
-	__FreeEyesContext(&startContext->plugin->pUserContext);
+    struct EyesContext *ctx;
+
+    __Get(&ctx);
+	__FreeEyesContext(ctx);
 	return TRUE;
 }
 
 BOOL WINAPI
 DllMain(HINSTANCE hModule, DWORD fdwReason, LPVOID lpReserved)
 {
+    LPVOID lpvData;
+    BOOL fIgnore;
+
 	switch (fdwReason) {
 	case DLL_PROCESS_ATTACH: {
+        if ((dwCtxIndex = TlsAlloc()) == TLS_OUT_OF_INDEXES)
+            return FALSE;
 		break;
 	}
 
 	case DLL_THREAD_ATTACH:
+        lpvData = static_cast<LPVOID>(LocalAlloc(LPTR, sizeof(struct EyesContext)));
+        if (lpvData != nullptr)
+            fIgnore = TlsSetValue(dwCtxIndex, lpvData);
 		break;
 
 	case DLL_THREAD_DETACH:
+        lpvData = TlsGetValue(dwCtxIndex);
+        if (lpvData != nullptr)
+            LocalFree(static_cast<HLOCAL>(lpvData));
 		break;
 
 	case DLL_PROCESS_DETACH:
+        lpvData = TlsGetValue(dwCtxIndex);
+        if (lpvData != nullptr)
+            LocalFree(static_cast<HLOCAL>(lpvData));
+        TlsFree(dwCtxIndex);
 		break;
 	}
 	return TRUE;
