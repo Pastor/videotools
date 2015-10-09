@@ -64,15 +64,16 @@ ProcessFrame(VideoPluginFrameContext *frameContext)
 {
     cv::Mat mat = cv::cvarrToMat(frameContext->frame);
     if (frameContext->seqFaces != nullptr && frameContext->seqFaces->total > 0) {
-        /**MESSAGE: Лицо найдено в количестве больше нуля. Берем первый */
-	    auto rect = reinterpret_cast<CvRect *>(cvGetSeqElem(frameContext->seqFaces, 0));
-	    auto realRect = cv::Rect(rect->x, rect->y, rect->width, rect->height);
-	    /**MESSAGE: realRect - это область лица */
-		cv::Mat realFace(mat, realRect);
-
-		cv::CascadeClassifier *left = ((struct EyesContext *)frameContext->plugin->pUserContext)->left;
+        cv::CascadeClassifier *left = ((struct EyesContext *)frameContext->plugin->pUserContext)->left;
 		cv::CascadeClassifier *right = ((struct EyesContext *)frameContext->plugin->pUserContext)->right;
-		/**MESSAGE: Начинаем работать с глазами */
+		
+		if (left != nullptr && right != nullptr) {
+			auto rect = reinterpret_cast<CvRect *>(cvGetSeqElem(frameContext->seqFaces, 0));
+			auto realRect = cv::Rect(rect->x, rect->y, rect->width, rect->height);
+			cv::Mat realFace(mat, realRect);
+			
+			/**MESSAGE: Начинаем работать с глазами */
+		}
     }
     /*MESSAGE: Расчеты */	
     real contrast = __calculateGlobalContrast(mat);
@@ -90,8 +91,8 @@ StartProcess(VideoPluginStartContext *startContext)
 	__FreeEyesContext(&startContext->plugin->pUserContext);
 	startContext->plugin->pUserContext = LocalAlloc(LPTR, sizeof(struct EyesContext));
 	RtlSecureZeroMemory(startContext->plugin->pUserContext, sizeof(struct EyesContext));
-	((struct EyesContext *)startContext->plugin->pUserContext)->left = new cv::CascadeClassifier();
-	((struct EyesContext *)startContext->plugin->pUserContext)->right = new cv::CascadeClassifier();
+	
+	
 	/**TODO: Загружаем */
 	{
 		char szBuffer[1024 + 40];
@@ -100,16 +101,26 @@ StartProcess(VideoPluginStartContext *startContext)
 		GetModuleFileNameA(nullptr, szBuffer, sizeof(szBuffer) - 40);
 		PathRemoveFileSpecA(szBuffer);
 		PathCombineA(szBuffer, szBuffer, "haarcascade_mcs_lefteye.xml");
+		((struct EyesContext *)startContext->plugin->pUserContext)->left = new cv::CascadeClassifier();
 		ret = ((struct EyesContext *)startContext->plugin->pUserContext)->left->load(szBuffer);
 		if (!ret) {
 			/**FIXME: Ошибка загрузки левого */
+			delete ((struct EyesContext *)startContext->plugin->pUserContext)->left;
+			((struct EyesContext *)startContext->plugin->pUserContext)->left = nullptr;
+			return FALSE;
 		}
 		GetModuleFileNameA(nullptr, szBuffer, sizeof(szBuffer) - 40);
 		PathRemoveFileSpecA(szBuffer);
 		PathCombineA(szBuffer, szBuffer, "haarcascade_mcs_righteye.xml");
+		((struct EyesContext *)startContext->plugin->pUserContext)->right = new cv::CascadeClassifier();
 		ret = ((struct EyesContext *)startContext->plugin->pUserContext)->right->load(szBuffer);
 		if (!ret) {
 			/**FIXME: Ошибка загрузки правого */
+			delete ((struct EyesContext *)startContext->plugin->pUserContext)->left;
+			((struct EyesContext *)startContext->plugin->pUserContext)->left = nullptr;
+			delete ((struct EyesContext *)startContext->plugin->pUserContext)->right;
+			((struct EyesContext *)startContext->plugin->pUserContext)->right = nullptr;
+			return FALSE;
 		}
 	}
 	return TRUE;
