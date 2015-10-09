@@ -17,13 +17,13 @@ static void __calculateHistogram(const cv::Mat &inputImage, real *blue, real *gr
 static real __calculateGlobalContrast(const cv::Mat &inputImage);
 static real __calculateSharpness(const cv::Mat &inputImage);
 static real __calculateSNR(const cv::Mat &inputImage);
-static real __calculateEyesDistance(const cv::Mat &inputImage);
+static real __calculateEyesDistance(const cv::Point_<real> &leftEyeCenter, const cv::Point_<real> &rightEyeCenter);
+static bool __searchEyes(const cv::Mat &inputFace, cv::CascadeClassifier *left, cv::CascadeClassifier *right, cv::Point_<real> &leftEye, cv::Point_<real> &rightEye);
 
 struct EyesContext {
 	cv::CascadeClassifier *left;
 	cv::CascadeClassifier *right;
 };
-
 
 static void 
 __FreeEyesContext(LPVOID *ctx)
@@ -63,7 +63,9 @@ INT
 ProcessFrame(VideoPluginFrameContext *frameContext)
 {
     cv::Mat mat = cv::cvarrToMat(frameContext->frame);
-    if (frameContext->seqFaces != nullptr && frameContext->seqFaces->total > 0) {
+    
+	real eyesDistance = -1.0;
+	if (frameContext->seqFaces != nullptr && frameContext->seqFaces->total > 0) {
         cv::CascadeClassifier *left = ((struct EyesContext *)frameContext->plugin->pUserContext)->left;
 		cv::CascadeClassifier *right = ((struct EyesContext *)frameContext->plugin->pUserContext)->right;
 		
@@ -71,15 +73,17 @@ ProcessFrame(VideoPluginFrameContext *frameContext)
 			auto rect = reinterpret_cast<CvRect *>(cvGetSeqElem(frameContext->seqFaces, 0));
 			auto realRect = cv::Rect(rect->x, rect->y, rect->width, rect->height);
 			cv::Mat realFace(mat, realRect);
-			
-			/**MESSAGE: Начинаем работать с глазами */
+				
+			cv::Point_<real> leftEye, rightEye;
+			if( __searchEyes(realFace, left, right, leftEye, rightEye) == true ) {					
+				eyesDistance = __calculateEyesDistance(leftEye, rightEye);
+			}						
 		}
     }
     /*MESSAGE: Расчеты */	
     real contrast = __calculateGlobalContrast(mat);
     real sharpness = __calculateSharpness(mat);
     real snr = __calculateSNR(mat);
-    real eyeDistance = __calculateEyesDistance(mat);
     //TODO: куда результаты вычислений отдавать?
 
     return TRUE;
@@ -91,7 +95,6 @@ StartProcess(VideoPluginStartContext *startContext)
 	__FreeEyesContext(&startContext->plugin->pUserContext);
 	startContext->plugin->pUserContext = LocalAlloc(LPTR, sizeof(struct EyesContext));
 	RtlSecureZeroMemory(startContext->plugin->pUserContext, sizeof(struct EyesContext));
-	
 	
 	/**TODO: Загружаем */
 	{
@@ -244,10 +247,36 @@ real __calculateSNR(const cv::Mat &inputImage)
 	return snr;
 }
 
-real __calculateEyesDistance(const cv::Mat &inputImage)
+real __calculateEyesDistance(const cv::Point_<real> &leftEyeCenter, const cv::Point_<real> &rightEyeCenter)
+{	
+	cv::Point_<real> difference(rightEyeCenter - leftEyeCenter);
+	return std::sqrt( difference.x*difference.x + difference.y*difference.y );
+}
+
+bool __searchEyes(const cv::Mat &face, cv::CascadeClassifier *left, cv::CascadeClassifier *right, cv::Point_<real> &leftEye, cv::Point_<real> &rightEye)
 {
-	//TODO 
-	return 0.0;
+	cv::Size minEyeSize(20,20);
+	std::vector<cv::Rect> v_eyes; 
+	
+	cv::Rect roi(0, 0, face.cols/2, face.rows/2);      
+	cv::Mat topLeftPart(face, roi);
+    left.detectMultiScale(topLeftPart, v_eyes, 1.05, 11, cv::CASCADE_FIND_BIGGEST_OBJECT, minEyeSize);
+    if(v_eyes.size() > 0)
+        leftEye = cv::Point_<real>( v_eyes[0].x + (real)v_eyes[0].width / 2.0 , v_eyes[0].y + (real)v_eyes[0].height / 2.0);
+	else
+		return false;
+
+	v_eyes.clear();	
+    roi = roi + cv::Point(input.cols/2, 0);
+    cv::Mat topRightPart(face, roi);    
+    right.detectMultiScale(topRightPart, v_eyes, 1.05, 11, cv::CASCADE_FIND_BIGGEST_OBJECT, minEyeSize);
+    if(v_eyes.size() > 0) {
+		v_eyes[0] = v_eyes[0] + cv::Point(input.cols/2, 0); 
+        rightEye = cv::Point_<real>( v_eyes[0].x + (real)v_eyes[0].width / 2.0 , v_eyes[0].y + (real)v_eyes[0].height / 2.0 );
+	}
+	else
+		return false;
+	return true;
 }
 
 
