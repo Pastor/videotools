@@ -12,12 +12,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\3rdparty\sqlite3\sqlite3.c" />
+    <ClCompile Include="haar.cpp" />
     <ClCompile Include="logger.cpp" />
     <ClCompile Include="properties.cpp" />
     <ClCompile Include="videoplugin.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\3rdparty\sqlite3\sqlite3.h" />
+    <ClInclude Include="haar.h" />
     <ClInclude Include="logger.h" />
     <ClInclude Include="properties.h" />
     <ClInclude Include="videoplugin.h" />

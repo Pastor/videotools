@@ -18,6 +18,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "detectStasm", "detectStasm\
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "detectQuality", "detectQuality\detectQuality.vcxproj", "{1DC6E2C8-A10B-4F37-9DDF-AAED6805DBC9}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0C73F5DC-36E2-442B-91F1-CCC29E772353} = {0C73F5DC-36E2-442B-91F1-CCC29E772353}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

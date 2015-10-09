@@ -37,6 +37,7 @@
 #define WM_FRAME_UPDATE  (WM_USER + 100)
 #define WM_FRAME_NEXT    (WM_FRAME_UPDATE + 1)
 #define WM_FRAME_STOP    (WM_FRAME_UPDATE + 2)
+#define WM_FRAME_FAILED  (WM_FRAME_UPDATE + 3)
 
 #define ID_PLUGINS_START  41000
 
@@ -246,6 +247,7 @@ __ProcessFrames(LPVOID pParam)
     IplImage  *i;
     int        iFrame;
     int        iStopFrame;
+    int        iFailedFrame;
     FrameInfo  fi;
     DWORD      dwStartTime;
     DWORD      dwStartProcess;
@@ -290,12 +292,17 @@ __ProcessFrames(LPVOID pParam)
     faces.reserve(1024);
     __PluginsStart(&ctx);
     dwStartProcess = timeGetTime();
-    while ((gProcessFramesRuning) && 
-        p->cvCapture != nullptr && 
-        ((i = cvQueryFrame(p->cvCapture)) != nullptr) &&
-        iFrame < iStopFrame) {
+    iFailedFrame = 0;
+    SendMessage(p->hMainWnd, WM_FRAME_FAILED, 0, iFailedFrame);
+    while ((gProcessFramesRuning) && p->cvCapture != nullptr && iFrame < iStopFrame) {
+        if ((i = cvQueryFrame(p->cvCapture)) == nullptr) {
+            ++iFrame;
+            ++iFailedFrame;
+            cvSetCaptureProperty(p->cvCapture, CV_CAP_PROP_POS_FRAMES, iFrame);
+            SendMessage(p->hMainWnd, WM_FRAME_FAILED, 0, iFailedFrame);
+            continue;
+        }
         iFrame = static_cast<int>(cvGetCaptureProperty(p->cvCapture, CV_CAP_PROP_POS_FRAMES));
-
         frameCtx.iFrame = iFrame;
         frameCtx.frame = i;
         fi.iFrame = iFrame;
@@ -380,6 +387,7 @@ MainDialog(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     static HWND  hProcessPercent = nullptr;
     static HWND  hDetectedFaces = nullptr;
     static HWND  hVideoQuality = nullptr;
+    static HWND  hFailedFrames = nullptr;
 
     static HANDLE hProcessThread = nullptr;    
     static DWORD  dwProcessThreadId;
@@ -397,6 +405,7 @@ MainDialog(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         hProcessPercent = GetDlgItem(hWnd, IDC_PROCESS_PERCENT);
         hDetectedFaces = GetDlgItem(hWnd, IDC_INFO_DETECTED_FACES);
         hVideoQuality = GetDlgItem(hWnd, IDC_INFO_VIDEO_QUALITY);
+        hFailedFrames = GetDlgItem(hWnd, IDC_INFO_FAILED_FRAMES);
         hDefBrush = CreateSolidBrush(cDefColor);
         hFont = CreateFont(12, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET,
                             OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, TEXT("Lucida Console"));
@@ -407,6 +416,8 @@ MainDialog(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         threadParam.prop = gProp;
         SetWindowText(hProcessPercent, TEXT(""));
         SetWindowText(hVideoQuality, TEXT(""));
+        SetWindowText(hFailedFrames, TEXT(""));
+
         SendMessage(hProcessPercent, WM_SETFONT, reinterpret_cast<WPARAM>(hFont), static_cast<LPARAM>(0));
         SendMessage(hVideoQuality, WM_SETFONT, reinterpret_cast<WPARAM>(hFont), static_cast<LPARAM>(0));
         __UpdatePluginsMenu(hMainMenu);
@@ -563,6 +574,12 @@ MainDialog(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             }
         }
         EnableMenuItem(hMainMenu, ID_PLUGINS_LOADED, MF_ENABLED | MF_BYCOMMAND);
+        break;
+    }
+    case WM_FRAME_FAILED: {
+        int iFailedFrame = lParam;
+        __WindowPrintf(hFailedFrames, TEXT("%d"), iFailedFrame);
+        UpdateWindow(hFailedFrames);
         break;
     }
     case WM_FRAME_UPDATE: {
