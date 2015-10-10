@@ -148,6 +148,12 @@ Logger::event()
 }
 
 void 
+Logger::event(int id)
+{
+    d->event = id;
+}
+
+void 
 Logger::printf(const char* const szFormat, ...)
 {
     std::lock_guard<std::mutex>  locker(d->mutex);

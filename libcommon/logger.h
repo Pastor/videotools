@@ -15,6 +15,7 @@ public:
     ~Logger();
 
     void event();
+    void event(int id);
     void printf(const char * const szFormat, ...);
     void printf(const wchar_t * const szFormat, ...);
 };

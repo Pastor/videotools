@@ -22,6 +22,7 @@ public:
     void         setString (const char * const szKey, const wchar_t * const szValue);
 
     int          getInteger(const char * const szKey, int iDefault = 0);
+    float        getFloat(const char * const szKey, float fDefault = .0);
     bool         getBoolean(const char * const szKey, bool bDefaut = false);
     void         setInteger(const char * const szKey, int iValue);
     void         setBoolean(const char * const szKey, bool bValue);

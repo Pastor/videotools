@@ -5,7 +5,9 @@
 #include <Shlwapi.h>
 #include <xstring.h>
 #include <logger.h>
+#include <xstring.h>
 #include <properties.h>
+#include  <system_helper.h>
 #include "plugin.h"
 #include <haar.h>
 #include <opencv2/objdetect.hpp>
@@ -27,18 +29,38 @@
 typedef float real;
 
 static DWORD dwCtxIndex;
+static DWORD dwProcessId;
 
 struct EyesContext {
 	CvHaarClassifierCascade *left;
 	CvHaarClassifierCascade *right;
 	CvMemStorage            *storage;
     Logger                  *logger;
+    /** */
+    real                     minDistance;
+    real                     maxDistance;
+    real                     minContrast;
+    real                     maxContrast;
+    real                     minSharp;
+    real                     maxSharp;
+    real                     minNoise;
+    real                     maxNoise;
 };
 
-static void
+static void __inline
 __Get(struct EyesContext **pCtx)
 {
     (*pCtx) = static_cast<struct EyesContext *>(TlsGetValue(dwCtxIndex));
+}
+
+static bool __inline
+__IsSet(real value, real minValue, real maxValue)
+{
+    if (value < minValue)
+        return false;
+    if (maxValue == -1)
+        return true;
+    return value <= maxValue;
 }
 
 static void __calculateHistogram(const cv::Mat &inputImage, real *blue, real *green, real *red);
@@ -75,13 +97,14 @@ INT
 LoadPlugin(VideoPlugin *pc)
 {
 	pc->lpstrPluginName = TEXT("Quality");
-	pc->wVersionMajor = 0;
+	pc->wVersionMajor = 1;
 	pc->wVersionMinor = 1;
 	pc->pFree = reinterpret_cast<pfnFreePlugin>(FreePlugin);
 	pc->pProcessFrame = reinterpret_cast<pfnProcessFrame>(ProcessFrame);
 	pc->pStartProcess = reinterpret_cast<pfnStartProcess>(StartProcess);
 	pc->pStopProcess = reinterpret_cast<pfnStopProcess>(StopProcess);
     pc->isActive = pc->prop->getBoolean("plugins.quality.enabled", true);
+
 	return TRUE;
 }
 
@@ -118,8 +141,12 @@ ProcessFrame(VideoPluginFrameContext *frameContext)
     auto contrast = __calculateGlobalContrast(mat);
     auto sharpness = __calculateSharpness(mat);
     auto snr = __calculateSNR(mat);
+    auto result = __IsSet(eyesDistance, ctx->minDistance, ctx->maxDistance) &&
+        __IsSet(contrast, ctx->minContrast, ctx->maxContrast) &&
+        __IsSet(sharpness, ctx->minSharp, ctx->maxSharp);
 	//TODO: куда результаты вычислений отдавать?
-    ctx->logger->printf(TEXT("Кадр %08d: %08.3f, %08.3f, %08.3f, %08.3f"), frameContext->iFrame, eyesDistance, contrast, sharpness, snr);
+    ctx->logger->printf(TEXT("   %08d;             %08.00f;%08.03f;%08.03f;%08.03f;%ls"), frameContext->iFrame, eyesDistance, contrast, sharpness, snr, (result ? TEXT("  хороший") : TEXT("   плохой")));
+    frameContext->iQuality += result;
 	return TRUE;
 }
 
@@ -129,44 +156,65 @@ StartProcess(VideoPluginStartContext *startContext)
     struct EyesContext *ctx;
 
     __Get(&ctx);
-	RtlSecureZeroMemory(ctx, sizeof(struct EyesContext));
-
+    {
+        auto path = absFilePath("haarcascade_mcs_lefteye.xml");
+        if (ctx->logger == nullptr) {
+            ctx->logger = new Logger(absFilePath("quality.log").c_str());
+        }
+        if (ctx->left == nullptr) {
+            ctx->left = static_cast<CvHaarClassifierCascade *>(cvLoad(path.c_str()));
+            if (ctx->left == nullptr) {
+                /**FIXME: Ошибка загрузки левого */
+                ctx->logger->printf(TEXT("Файл %ls не найден"), std::toString(path).c_str());
+                return FALSE;
+            }
+        }
+        if (ctx->right == nullptr) {
+            path = absFilePath("haarcascade_mcs_righteye.xml");
+            ctx->right = static_cast<CvHaarClassifierCascade *>(cvLoad(path.c_str()));
+            if (ctx->right == nullptr) {
+                /**FIXME: Ошибка загрузки правого */
+                ctx->logger->printf(TEXT("Файл %ls не найден"), std::toString(path).c_str());
+                cvReleaseHaarClassifierCascade(&ctx->left);
+                return FALSE;
+            }
+        }
+        if (ctx->storage == nullptr) {
+            ctx->storage = cvCreateMemStorage(0);
+        }        
+    }
 	/**TODO: Загружаем */
-    ctx->logger = new Logger("quality.log");
-    ctx->logger->event();
-	{
-		char szBuffer[1024 + 40];
+    ctx->logger->event(++dwProcessId);
+    ctx->logger->printf(TEXT("Открывается файл %ls"), std::toString(startContext->pFileName).c_str());
+    ctx->logger->printf(TEXT("Кадров в секунду: %d"), startContext->fps);
+    ctx->logger->printf(TEXT("Ширина кадра: %d"), startContext->iWidth);
+    ctx->logger->printf(TEXT("Высота кадра: %d"), startContext->iHeight);
+    ctx->logger->printf(TEXT("Всего кадров: %d"), startContext->iFrameCount);
 
-		GetModuleFileNameA(nullptr, szBuffer, sizeof(szBuffer) - 40);
-		PathRemoveFileSpecA(szBuffer);
-		PathCombineA(szBuffer, szBuffer, "haarcascade_mcs_lefteye.xml");
-		ctx->left = static_cast<CvHaarClassifierCascade *>(cvLoad(szBuffer));
-		if (ctx->left == nullptr) {
-			/**FIXME: Ошибка загрузки левого */
-			
-			return FALSE;
-		}
-		GetModuleFileNameA(nullptr, szBuffer, sizeof(szBuffer) - 40);
-		PathRemoveFileSpecA(szBuffer);
-		PathCombineA(szBuffer, szBuffer, "haarcascade_mcs_righteye.xml");
-		ctx->right = static_cast<CvHaarClassifierCascade *>(cvLoad(szBuffer));
-		if (ctx->right == nullptr) {
-			/**FIXME: Ошибка загрузки правого */
-			cvReleaseHaarClassifierCascade(&ctx->left);
-			return FALSE;
-		}
-		ctx->storage = cvCreateMemStorage(0);
-	}
+    ctx->minDistance = startContext->prop->getFloat("limits.frame.distance.min", -1);
+    ctx->maxDistance = startContext->prop->getFloat("limits.frame.distance.max", -1);
+    
+    ctx->minContrast = startContext->prop->getFloat("limits.frame.contrast.min", -1);
+    ctx->maxContrast = startContext->prop->getFloat("limits.frame.contrast.max", -1);
+    
+    ctx->minNoise = startContext->prop->getFloat("limits.frame.noise.min", -1);
+    ctx->maxNoise = startContext->prop->getFloat("limits.frame.noise.max", -1);
+    
+    ctx->minSharp = startContext->prop->getFloat("limits.frame.sharp.min", -1);
+    ctx->maxSharp = startContext->prop->getFloat("limits.frame.sharp.max", -1);
+
+    ctx->logger->printf(TEXT("Расстояние между глаз. Минимальное: %04.03f, Максимальное: %04.03f"), ctx->minDistance, ctx->maxDistance);
+    ctx->logger->printf(TEXT("Контраст. Минимальное: %04.03f, Максимальное: %04.03f"), ctx->minContrast, ctx->maxContrast);
+    ctx->logger->printf(TEXT("Шум. Минимальное: %04.03f, Максимальное: %04.03f"), ctx->minNoise, ctx->maxNoise);
+    ctx->logger->printf(TEXT("Резкость. Минимальное: %04.03f, Максимальное: %04.03f"), ctx->minSharp, ctx->maxSharp);
+    ctx->logger->printf(TEXT("Номер кадра;Расстояние между глаз;Контраст;Резкость;   Шум  ;Результат"));
+	
 	return TRUE;
 }
 
 INT
 StopProcess(VideoPluginStartContext *startContext)
 {
-    struct EyesContext *ctx;
-
-    __Get(&ctx);
-	__FreeEyesContext(ctx);
 	return TRUE;
 }
 
@@ -178,27 +226,36 @@ DllMain(HINSTANCE hModule, DWORD fdwReason, LPVOID lpReserved)
 
 	switch (fdwReason) {
 	case DLL_PROCESS_ATTACH: {
+        dwProcessId = 0;
         if ((dwCtxIndex = TlsAlloc()) == TLS_OUT_OF_INDEXES)
             return FALSE;
 		break;
 	}
 
 	case DLL_THREAD_ATTACH:
-        lpvData = static_cast<LPVOID>(LocalAlloc(LPTR, sizeof(struct EyesContext)));
-        if (lpvData != nullptr)
-            fIgnore = TlsSetValue(dwCtxIndex, lpvData);
+        lpvData = TlsGetValue(dwCtxIndex);
+        if (lpvData == nullptr) {
+            lpvData = static_cast<LPVOID>(LocalAlloc(LPTR, sizeof(struct EyesContext)));
+            if (lpvData != nullptr)
+                fIgnore = TlsSetValue(dwCtxIndex, lpvData);
+        }        
 		break;
 
 	case DLL_THREAD_DETACH:
         lpvData = TlsGetValue(dwCtxIndex);
-        if (lpvData != nullptr)
+        if (lpvData != nullptr) {
+            __FreeEyesContext(static_cast<struct EyesContext *>(lpvData));
             LocalFree(static_cast<HLOCAL>(lpvData));
+        }
 		break;
 
 	case DLL_PROCESS_DETACH:
+        dwProcessId = 0;
         lpvData = TlsGetValue(dwCtxIndex);
-        if (lpvData != nullptr)
+        if (lpvData != nullptr) {
+            __FreeEyesContext(static_cast<struct EyesContext *>(lpvData));
             LocalFree(static_cast<HLOCAL>(lpvData));
+        }
         TlsFree(dwCtxIndex);
 		break;
 	}

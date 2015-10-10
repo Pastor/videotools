@@ -52,6 +52,7 @@ typedef std::vector<VideoPlugin *>  VideoPluginList;
 struct _VideoPluginFrameContext
 {
     int                  iFrame;
+    int                  iQuality;
     struct _IplImage    *frame;
     CvSeq               *seqFaces;
     VideoPlugin         *plugin;
@@ -65,6 +66,11 @@ struct _VideoPluginStartContext
     VideoPlugin         *plugin;
     HWND                 hMainWnd;
     LPCSTR               pFileName;
+    Properties          *prop;
+    int                  iFrameCount;
+    int                  iWidth;
+    int                  iHeight;
+    int                  fps;
 };
 typedef struct _VideoPluginStartContext VideoPluginStartContext;
 

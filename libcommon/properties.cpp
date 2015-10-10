@@ -405,6 +405,14 @@ Properties::getInteger(const char* const szKey, int iDefault)
     return ret.size() > 0 ? std::stoi(ret, &sz) : iDefault;
 }
 
+float 
+Properties::getFloat(const char* const szKey, float fDefault)
+{
+    std::string::size_type sz;
+    auto ret = getString(szKey);
+    return ret.size() > 0 ? std::atof(ret.c_str()) : fDefault;
+}
+
 bool 
 Properties::getBoolean(const char* const szKey, bool bDefaut)
 {

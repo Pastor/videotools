@@ -200,7 +200,8 @@ struct tagFrameInfo
     int         iFrame;
     int         iFrameTotal;
     int         iProcessPercent;
-    int         iDetectedFace;
+    int         iGoodFrames;
+    int         iQuality;
 
     DWORD       dwMiddleTime;
     DWORD       dwProcessTime;
@@ -307,6 +308,11 @@ __ProcessFrames(LPVOID pParam)
 #endif
     faces.reserve(1024);
     ctx.pFileName = p->pFileName;
+    ctx.fps = static_cast<int>(cvGetCaptureProperty(p->cvCapture, CV_CAP_PROP_FPS));
+    ctx.iWidth = static_cast<int>(cvGetCaptureProperty(p->cvCapture, CV_CAP_PROP_FRAME_WIDTH));
+    ctx.iHeight = static_cast<int>(cvGetCaptureProperty(p->cvCapture, CV_CAP_PROP_FRAME_HEIGHT));
+    ctx.iFrameCount = static_cast<int>(cvGetCaptureProperty(p->cvCapture, CV_CAP_PROP_FRAME_COUNT));
+    ctx.prop = gProp;
     __PluginsStart(&ctx);
     dwStartProcess = timeGetTime();
     iFailedFrame = 0;
@@ -332,8 +338,8 @@ __ProcessFrames(LPVOID pParam)
         __Detect(classifier, storage, i, faces, &frameCtx.seqFaces);
 #endif
         __PluginsProcessFrame(&frameCtx);
-        if (faces.size() > 0)
-            fi.iDetectedFace++;
+        if (faces.size() > 0 && frameCtx.iQuality)
+            fi.iGoodFrames++;
         dwAllTime += (timeGetTime() - dwStartTime);
         fi.dwMiddleTime = iFrame > 0 ? (dwAllTime / iFrame) : 0;
         fi.dwProcessTime = timeGetTime() - dwStartProcess;
@@ -537,12 +543,12 @@ MainDialog(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     }
     case WM_FRAME_NEXT: {
         auto fi = reinterpret_cast<FrameInfo *>(lParam);
-        auto quality = (fi->iDetectedFace * 100) / fi->iFrameTotal;
+        auto quality = (fi->iGoodFrames * 100) / fi->iFrameTotal;
         auto tail = fi->iFrameTotal - fi->iFrame;
 
         __WindowPrintf(hCurrentFrame, TEXT("%d"), fi->iFrame);
         __WindowPrintf(hProcessPercent, TEXT("%d%%"), fi->iProcessPercent);
-        __WindowPrintf(hDetectedFaces, TEXT("%d"), fi->iDetectedFace);
+        __WindowPrintf(hDetectedFaces, TEXT("%d"), fi->iGoodFrames);
         __WindowPrintf(hVideoQuality, TEXT("%d%%"), quality);
         {
             auto total = tail * fi->dwMiddleTime;

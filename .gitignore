@@ -35,3 +35,4 @@ Debug
 *.log
 .Temporary
 .vc
+.Result
