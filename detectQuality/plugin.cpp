@@ -39,12 +39,16 @@ struct EyesContext {
     /** */
     real                     minDistance;
     real                     maxDistance;
+	real					 eyesdistanceTreshold;
     real                     minContrast;
     real                     maxContrast;
+	real					 contrastTreshold;
     real                     minSharp;
     real                     maxSharp;
+	real				  	 sharpnessTreshold;
     real                     minNoise;
     real                     maxNoise;
+	real				 	 snrTreshold;
 };
 
 static void __inline
@@ -61,6 +65,12 @@ __IsSet(real value, real minValue, real maxValue)
     if (maxValue == -1)
         return true;
     return value <= maxValue;
+}
+
+static bool __inline
+__checkTreshold(real value, real treshold)
+{
+    return value >= treshold;
 }
 
 static void __calculateHistogram(const cv::Mat &inputImage, real *blue, real *green, real *red);
@@ -141,11 +151,15 @@ ProcessFrame(VideoPluginFrameContext *frameContext)
     auto contrast = __calculateGlobalContrast(mat);
     auto sharpness = __calculateSharpness(mat);
     auto snr = __calculateSNR(mat);
-    auto result = __IsSet(eyesDistance, ctx->minDistance, ctx->maxDistance) &&
+    /*auto result = __IsSet(eyesDistance, ctx->minDistance, ctx->maxDistance) &&
         __IsSet(contrast, ctx->minContrast, ctx->maxContrast) &&
-        __IsSet(sharpness, ctx->minSharp, ctx->maxSharp);
+        __IsSet(sharpness, ctx->minSharp, ctx->maxSharp);*/
+	auto result = __checkTreshold(eyesDistance, ctx->eyesdistanceTreshold) &&
+				  __checkTreshold(contrast, ctx->contrastTreshold) &&
+				  __checkTreshold(sharpness, ctx->sharpnessTreshold) &&
+				  __checkTreshold(sharpness, ctx->snrTreshold); 
 	//TODO: куда результаты вычислений отдавать?
-    ctx->logger->printf(TEXT("   %08d;             %08.00f;%08.03f;%08.03f;%08.03f;%ls"), frameContext->iFrame, eyesDistance, contrast, sharpness, snr, (result ? TEXT("  хороший") : TEXT("   плохой")));
+    ctx->logger->printf(TEXT("%08d\t%5.01f\t%04.03f\t%04.03f\t%05.01f\t%ls"), frameContext->iFrame, eyesDistance, contrast, sharpness, snr, (result ? TEXT("  хороший") : TEXT("   плохой")));
     frameContext->iQuality += result;
 	return TRUE;
 }
@@ -190,7 +204,18 @@ StartProcess(VideoPluginStartContext *startContext)
     ctx->logger->printf(TEXT("Ширина кадра: %d"), startContext->iWidth);
     ctx->logger->printf(TEXT("Высота кадра: %d"), startContext->iHeight);
     ctx->logger->printf(TEXT("Всего кадров: %d"), startContext->iFrameCount);
-
+	
+	ctx->eyesdistanceTreshold = startContext->prop->getFloat("limits.frame.distance.treshold", -1);   
+    ctx->contrastTreshold = startContext->prop->getFloat("limits.frame.contrast.treshold", -1);
+    ctx->sharpnessTreshold = startContext->prop->getFloat("limits.frame.sharp.treshold", -1);
+    ctx->snrTreshold = startContext->prop->getFloat("limits.frame.noise.treshold", -1);
+    ctx->logger->printf(TEXT("Пороговое значение расстояния между глазами: %05.01f"), ctx->eyesdistanceTreshold);
+    ctx->logger->printf(TEXT("Пороговое значение контраста: %04.03"), ctx->contrastTreshold);
+    ctx->logger->printf(TEXT("Пороговое значение отношения сигнал шум: %05.01f"), ctx->snrTreshold);
+    ctx->logger->printf(TEXT("Пороговое значение резкости: %04.03f"), ctx->sharpnessTreshold);
+    ctx->logger->printf(TEXT("Кадр\tРасстояние\tКонтраст\tРезкость\tШум\tРезультат"));
+		
+	/*
     ctx->minDistance = startContext->prop->getFloat("limits.frame.distance.min", -1);
     ctx->maxDistance = startContext->prop->getFloat("limits.frame.distance.max", -1);
     
@@ -208,7 +233,7 @@ StartProcess(VideoPluginStartContext *startContext)
     ctx->logger->printf(TEXT("Шум. Минимальное: %04.03f, Максимальное: %04.03f"), ctx->minNoise, ctx->maxNoise);
     ctx->logger->printf(TEXT("Резкость. Минимальное: %04.03f, Максимальное: %04.03f"), ctx->minSharp, ctx->maxSharp);
     ctx->logger->printf(TEXT("Номер кадра;Расстояние между глаз;Контраст;Резкость;   Шум  ;Результат"));
-	
+	*/
 	return TRUE;
 }
 
