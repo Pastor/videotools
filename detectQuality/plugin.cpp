@@ -23,9 +23,13 @@
 #include <opencv2/video/tracking_c.h>
 #include <opencv2/videoio/videoio_c.h>
 
+#include <unordered_map>
+#include <map>
+
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "libcommon.lib")
 
+typedef std::unordered_map<long, int>   FrameLenCollection;
 typedef float real;
 
 static DWORD dwCtxIndex;
@@ -37,18 +41,13 @@ struct EyesContext {
 	CvMemStorage            *storage;
     Logger                  *logger;
     /** */
-    real                     minDistance;
-    real                     maxDistance;
 	real					 eyesdistanceTreshold;
-    real                     minContrast;
-    real                     maxContrast;
 	real					 contrastTreshold;
-    real                     minSharp;
-    real                     maxSharp;
 	real				  	 sharpnessTreshold;
-    real                     minNoise;
-    real                     maxNoise;
 	real				 	 snrTreshold;
+	/** */
+	FrameLenCollection      *collection;
+	long                     lFramesCount;
 };
 
 static void __inline
@@ -100,6 +99,9 @@ __FreeEyesContext(struct EyesContext *ctx)
         if (ctx->logger != nullptr)
             delete ctx->logger;
         ctx->logger = nullptr;
+		if (ctx->collection != nullptr)
+			delete ctx->collection;
+		ctx->collection = nullptr;
 	}
 }
 
@@ -108,7 +110,7 @@ LoadPlugin(VideoPlugin *pc)
 {
 	pc->lpstrPluginName = TEXT("Quality");
 	pc->wVersionMajor = 1;
-	pc->wVersionMinor = 1;
+	pc->wVersionMinor = 2;
 	pc->pFree = reinterpret_cast<pfnFreePlugin>(FreePlugin);
 	pc->pProcessFrame = reinterpret_cast<pfnProcessFrame>(ProcessFrame);
 	pc->pStartProcess = reinterpret_cast<pfnStartProcess>(StartProcess);
@@ -151,16 +153,21 @@ ProcessFrame(VideoPluginFrameContext *frameContext)
     auto contrast = __calculateGlobalContrast(mat);
     auto sharpness = __calculateSharpness(mat);
     auto snr = __calculateSNR(mat);
-    /*auto result = __IsSet(eyesDistance, ctx->minDistance, ctx->maxDistance) &&
-        __IsSet(contrast, ctx->minContrast, ctx->maxContrast) &&
-        __IsSet(sharpness, ctx->minSharp, ctx->maxSharp);*/
 	auto result = __checkTreshold(eyesDistance, ctx->eyesdistanceTreshold) &&
 				  __checkTreshold(contrast, ctx->contrastTreshold) &&
 				  __checkTreshold(sharpness, ctx->sharpnessTreshold) &&
-				  __checkTreshold(sharpness, ctx->snrTreshold); 
+				  __checkTreshold(snr, ctx->snrTreshold);
 	//TODO: куда результаты вычислений отдавать?
-    ctx->logger->printf(TEXT("%08d\t%5.01f\t%04.03f\t%04.03f\t%05.01f\t%ls"), frameContext->iFrame, eyesDistance, contrast, sharpness, snr, (result ? TEXT("  хороший") : TEXT("   плохой")));
-    frameContext->iQuality += result;
+    ctx->logger->printf(TEXT("%08d|     %5.01f|   %04.03f|   %04.03f|  %05.01f|        %d|"), frameContext->iFrame, eyesDistance, contrast, sharpness, snr, (result ? 1 : 0));
+	if (result) {
+		++ctx->lFramesCount;
+	} else {
+		if (ctx->lFramesCount > 0) {
+			(*ctx->collection)[ctx->lFramesCount]++;
+		}
+		ctx->lFramesCount = 0;
+	}
+    frameContext->iQuality += (result ? 1 : 0);
 	return TRUE;
 }
 
@@ -195,51 +202,53 @@ StartProcess(VideoPluginStartContext *startContext)
         }
         if (ctx->storage == nullptr) {
             ctx->storage = cvCreateMemStorage(0);
-        }        
+        }  
+		if (ctx->collection == nullptr) {
+			ctx->collection = new FrameLenCollection;
+		}
     }
 	/**TODO: Загружаем */
     ctx->logger->event(++dwProcessId);
     ctx->logger->printf(TEXT("Открывается файл %ls"), std::toString(startContext->pFileName).c_str());
     ctx->logger->printf(TEXT("Кадров в секунду: %d"), startContext->fps);
-    ctx->logger->printf(TEXT("Ширина кадра: %d"), startContext->iWidth);
-    ctx->logger->printf(TEXT("Высота кадра: %d"), startContext->iHeight);
-    ctx->logger->printf(TEXT("Всего кадров: %d"), startContext->iFrameCount);
+    ctx->logger->printf(TEXT("Ширина кадра    : %d"), startContext->iWidth);
+    ctx->logger->printf(TEXT("Высота кадра    : %d"), startContext->iHeight);
+    ctx->logger->printf(TEXT("Всего кадров    : %d"), startContext->iFrameCount);
 	
 	ctx->eyesdistanceTreshold = startContext->prop->getFloat("limits.frame.distance.treshold", -1);   
     ctx->contrastTreshold = startContext->prop->getFloat("limits.frame.contrast.treshold", -1);
     ctx->sharpnessTreshold = startContext->prop->getFloat("limits.frame.sharp.treshold", -1);
     ctx->snrTreshold = startContext->prop->getFloat("limits.frame.noise.treshold", -1);
-    ctx->logger->printf(TEXT("Пороговое значение расстояния между глазами: %05.01f"), ctx->eyesdistanceTreshold);
-    ctx->logger->printf(TEXT("Пороговое значение контраста: %04.03"), ctx->contrastTreshold);
-    ctx->logger->printf(TEXT("Пороговое значение отношения сигнал шум: %05.01f"), ctx->snrTreshold);
-    ctx->logger->printf(TEXT("Пороговое значение резкости: %04.03f"), ctx->sharpnessTreshold);
-    ctx->logger->printf(TEXT("Кадр\tРасстояние\tКонтраст\tРезкость\tШум\tРезультат"));
-		
-	/*
-    ctx->minDistance = startContext->prop->getFloat("limits.frame.distance.min", -1);
-    ctx->maxDistance = startContext->prop->getFloat("limits.frame.distance.max", -1);
-    
-    ctx->minContrast = startContext->prop->getFloat("limits.frame.contrast.min", -1);
-    ctx->maxContrast = startContext->prop->getFloat("limits.frame.contrast.max", -1);
-    
-    ctx->minNoise = startContext->prop->getFloat("limits.frame.noise.min", -1);
-    ctx->maxNoise = startContext->prop->getFloat("limits.frame.noise.max", -1);
-    
-    ctx->minSharp = startContext->prop->getFloat("limits.frame.sharp.min", -1);
-    ctx->maxSharp = startContext->prop->getFloat("limits.frame.sharp.max", -1);
-
-    ctx->logger->printf(TEXT("Расстояние между глаз. Минимальное: %04.03f, Максимальное: %04.03f"), ctx->minDistance, ctx->maxDistance);
-    ctx->logger->printf(TEXT("Контраст. Минимальное: %04.03f, Максимальное: %04.03f"), ctx->minContrast, ctx->maxContrast);
-    ctx->logger->printf(TEXT("Шум. Минимальное: %04.03f, Максимальное: %04.03f"), ctx->minNoise, ctx->maxNoise);
-    ctx->logger->printf(TEXT("Резкость. Минимальное: %04.03f, Максимальное: %04.03f"), ctx->minSharp, ctx->maxSharp);
-    ctx->logger->printf(TEXT("Номер кадра;Расстояние между глаз;Контраст;Резкость;   Шум  ;Результат"));
-	*/
+    ctx->logger->printf(TEXT("Пороговое значение расстояния между глазами: %05.03f"), ctx->eyesdistanceTreshold);
+    ctx->logger->printf(TEXT("Пороговое значение контраста               : %05.03f"), ctx->contrastTreshold);
+    ctx->logger->printf(TEXT("Пороговое значение отношения сигнал шум    : %05.03f"), ctx->snrTreshold);
+    ctx->logger->printf(TEXT("Пороговое значение резкости                : %05.03f"), ctx->sharpnessTreshold);
+    ctx->logger->printf(TEXT("    Кадр|Расстояние|Контраст|Резкость|    Шум|Результат|"));
 	return TRUE;
 }
 
 INT
 StopProcess(VideoPluginStartContext *startContext)
 {
+	FILE *fd;
+	struct EyesContext *ctx;
+
+	__Get(&ctx);
+	if (ctx->lFramesCount > 0) {
+		(*ctx->collection)[ctx->lFramesCount]++;
+	}
+	ctx->lFramesCount = 0;
+	const auto &cc = (*ctx->collection);
+	std::map<long, int> ordered(cc.begin(), cc.end());
+
+	fopen_s(&fd, absFilePath("chips.log").c_str(), "a");
+	fprintf(fd, "Для файла: %s\n", startContext->pFileName);
+	fprintf(fd, "|Продолжительность|Количество|\n");
+	for (auto it = ordered.begin(); it != ordered.end(); ++it) {
+		fprintf(fd, "|        %09d| %09d|\n", (*it).first, (*it).second);
+	}
+	fflush(fd);
+	fclose(fd);
 	return TRUE;
 }
 

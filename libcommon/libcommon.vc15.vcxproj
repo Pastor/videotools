@@ -15,6 +15,7 @@
     <ClCompile Include="haar.cpp" />
     <ClCompile Include="logger.cpp" />
     <ClCompile Include="properties.cpp" />
+    <ClCompile Include="system_helper.cpp" />
     <ClCompile Include="videoplugin.cpp" />
   </ItemGroup>
   <ItemGroup>

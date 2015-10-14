@@ -326,6 +326,7 @@ __ProcessFrames(LPVOID pParam)
             continue;
         }
         iFrame = static_cast<int>(cvGetCaptureProperty(p->cvCapture, CV_CAP_PROP_POS_FRAMES));
+		frameCtx.iQuality = 0;
         frameCtx.iFrame = iFrame;
         frameCtx.frame = i;
         frameCtx.logger = gLogger;
