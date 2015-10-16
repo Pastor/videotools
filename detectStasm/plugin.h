@@ -28,11 +28,11 @@ extern "C" {
 #if defined(__cplusplus)
 extern "C" {
 #endif
-	__declspec(dllexport)
-		INT __CreateProcess(const char *directory);
+    __declspec(dllexport)
+        INT __CreateProcess(const char *directory);
 
-	__declspec(dllexport)
-		INT __FrameProcess(IplImage *iFrame, float landmarks[ALLOCATED_LANDMARKS], int *iLandmarks);
+    __declspec(dllexport)
+        INT __FrameProcess(IplImage *iFrame, float landmarks[ALLOCATED_LANDMARKS], int *iLandmarks);
 #if defined(__cplusplus)
 }
 #endif
