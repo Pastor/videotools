@@ -1,12 +1,17 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <xstring.h>
 #include <properties.h>
+#include  <system_helper.h>
+#include <haar.h>
 #include "plugin.h"
 #include "stasm_lib.h"
 #include "stasm.h"
 #include <opencv2/imgcodecs/imgcodecs_c.h>
 
 #pragma comment(lib, "libcommon.lib")
+
+static DWORD dwCtxIndex;
+static DWORD dwProcessId;
 
 typedef std::vector<stasm::DetPar> vec_DetPar;
 
@@ -92,6 +97,8 @@ ProcessFrame(VideoPluginFrameContext *frameContext)
     return foundface == TRUE;
 }
 
+
+
 INT
 StartProcess(VideoPluginStartContext *startContext)
 {
@@ -106,24 +113,129 @@ StopProcess(VideoPluginStartContext *startContext)
     return TRUE;
 }
 
+struct ProcessContext {
+	CvHaarClassifierCascade *classifier;
+	CvMemStorage            *storage;
+	CvSeq                   *seqFaces;
+};
+
+static void __inline
+__Get(struct ProcessContext **pCtx)
+{
+	(*pCtx) = static_cast<struct ProcessContext *>(TlsGetValue(dwCtxIndex));
+}
+
+static __inline void
+__DestroyContext(struct ProcessContext *ctx)
+{
+	__try {
+		if (ctx != nullptr && ctx->classifier != nullptr)
+		    cvReleaseHaarClassifierCascade(&(ctx->classifier));
+		if (ctx != nullptr && ctx->storage != nullptr)
+		    cvReleaseMemStorage(&(ctx->storage));
+	} __except (EXCEPTION_EXECUTE_HANDLER) {
+
+	}
+}
+
+INT 
+__CreateProcess(const char *directory)
+{
+	struct ProcessContext *ctx;
+
+	__Get(&ctx);
+	__DestroyContext(ctx);
+	{
+		auto classifierFile = absFilePath("haarcascade_frontalface_alt2.xml");
+		ctx->classifier = static_cast<CvHaarClassifierCascade *>(cvLoad(classifierFile.c_str()));
+		ctx->storage = cvCreateMemStorage(0);
+	}
+	return stasm_init(directory, FALSE);
+}
+
+INT 
+__FrameProcess(IplImage *iFrame, float landmarks[ALLOCATED_LANDMARKS], int *iLandmarks)
+{
+	struct ProcessContext *ctx;
+	std::vector<cv::Rect>   faces;
+	int         foundface;
+	vec_DetPar  detpars;
+	auto        leftborder = 0;
+	auto        topborder = 0;
+
+	
+	(*iLandmarks) = 0;
+	__Get(&ctx);
+	__Detect(ctx->classifier, ctx->storage, iFrame, faces, &ctx->seqFaces);
+	if (ctx->seqFaces->total == 0)
+		return TRUE;
+	detpars.resize(ctx->seqFaces->total);
+	for (auto i = 0; i < ctx->seqFaces->total; i++) {
+		auto facerect = reinterpret_cast<CvRect *>(cvGetSeqElem(ctx->seqFaces, i));
+		stasm::DetPar detpar; // detpar constructor sets all fields INVALID
+							  // detpar.x and detpar.y is the center of the face rectangle
+		detpar.x = facerect->x + facerect->width / 2.;
+		detpar.y = facerect->y + facerect->height / 2.;
+		detpar.x -= leftborder; // discount the border we added earlier
+		detpar.y -= topborder;
+		detpar.width = double(facerect->width);
+		detpar.height = double(facerect->height);
+		detpar.yaw = 0; // assume face has no yaw in this version of Stasm
+		detpar.eyaw = stasm::EYAW00;
+		detpars[i] = detpar;
+	}
+	__Set(detpars, 0);
+	__Set(iFrame);
+
+	if (!stasm_search_auto_ext(&foundface, landmarks, nullptr))
+		return FALSE;
+	(*iLandmarks) = 2 * stasm_NLANDMARKS;
+	return TRUE;
+}
+
 BOOL WINAPI
 DllMain(HINSTANCE hModule, DWORD fdwReason, LPVOID lpReserved)
 {
-    switch (fdwReason) {
-    case DLL_PROCESS_ATTACH: {
-        break;
-    }
+	LPVOID lpvData;
+	BOOL fIgnore;
 
-    case DLL_THREAD_ATTACH:
-        break;
+	switch (fdwReason) {
+	case DLL_PROCESS_ATTACH: {
+		dwProcessId = 0;
+		if ((dwCtxIndex = TlsAlloc()) == TLS_OUT_OF_INDEXES)
+			return FALSE;
+		break;
+	}
 
-    case DLL_THREAD_DETACH:
-        break;
+	case DLL_THREAD_ATTACH:
+		lpvData = TlsGetValue(dwCtxIndex);
+		if (lpvData == nullptr) {
+			lpvData = static_cast<LPVOID>(LocalAlloc(LPTR, sizeof(struct ProcessContext)));
+			if (lpvData != nullptr)
+				fIgnore = TlsSetValue(dwCtxIndex, lpvData);
+		}
+		break;
 
-    case DLL_PROCESS_DETACH:
-        break;
-    }
-    return TRUE;
+	case DLL_THREAD_DETACH:
+		lpvData = TlsGetValue(dwCtxIndex);
+		if (lpvData != nullptr) {
+			__DestroyContext(static_cast<struct ProcessContext *>(lpvData));
+			LocalFree(static_cast<HLOCAL>(lpvData));
+		}
+		break;
+
+	case DLL_PROCESS_DETACH:
+		dwProcessId = 0;
+		lpvData = TlsGetValue(dwCtxIndex);
+		if (lpvData != nullptr) {
+			__DestroyContext(static_cast<struct ProcessContext *>(lpvData));
+			LocalFree(static_cast<HLOCAL>(lpvData));
+		}
+		TlsFree(dwCtxIndex);
+		break;
+	}
+	return TRUE;
 }
+
 
 
