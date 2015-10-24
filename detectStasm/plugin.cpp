@@ -1,5 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <xstring.h>
+#include <logger.h>
 #include <properties.h>
 #include  <system_helper.h>
 #include <haar.h>
@@ -117,6 +118,7 @@ struct ProcessContext {
     CvHaarClassifierCascade *classifier;
     CvMemStorage            *storage;
     CvSeq                   *seqFaces;
+    Logger                  *logger;
 };
 
 static void __inline
@@ -133,8 +135,10 @@ __DestroyContext(struct ProcessContext *ctx)
             cvReleaseHaarClassifierCascade(&(ctx->classifier));
         if (ctx != nullptr && ctx->storage != nullptr)
             cvReleaseMemStorage(&(ctx->storage));
-    }
-    __except (EXCEPTION_EXECUTE_HANDLER) {
+        if (ctx != nullptr && ctx->logger != nullptr)
+            delete ctx->logger;
+        ctx->logger = nullptr;
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
 
     }
 }
@@ -147,11 +151,19 @@ __CreateProcess(const char *directory)
     __Get(&ctx);
     __DestroyContext(ctx);
     {
+        auto stasmLog = absFilePath("detectStasm.log");
         auto classifierFile = absFilePath("haarcascade_frontalface_alt2.xml");
+
         ctx->classifier = static_cast<CvHaarClassifierCascade *>(cvLoad(classifierFile.c_str()));
         ctx->storage = cvCreateMemStorage(0);
+        ctx->logger = new Logger(stasmLog.c_str());
+        ctx->logger->printf(TEXT("Загрузились..."));
     }
-    return stasm_init(directory, FALSE);
+    auto processDirectory = absFilePath(directory);
+    ctx->logger->printf(TEXT("Директория инициализации: %ls"), std::toString(processDirectory).c_str());
+    auto ret = stasm_init(processDirectory.c_str(), FALSE);
+    ctx->logger->printf(TEXT("Инициализация прошла: %ls"), ret == TRUE ? TEXT("успешно") : TEXT("с ошибками"));
+    return ret;
 }
 
 INT
@@ -167,6 +179,10 @@ __FrameProcess(IplImage *iFrame, float landmarks[ALLOCATED_LANDMARKS], int *iLan
 
     (*iLandmarks) = 0;
     __Get(&ctx);
+    if (iFrame == nullptr) {
+        ctx->logger->printf(TEXT("Нулевой кадр пришел. Ничего не делаем."));
+        return FALSE;
+    }
     __Detect(ctx->classifier, ctx->storage, iFrame, faces, &ctx->seqFaces);
     if (ctx->seqFaces->total == 0)
         return TRUE;
@@ -174,7 +190,7 @@ __FrameProcess(IplImage *iFrame, float landmarks[ALLOCATED_LANDMARKS], int *iLan
     for (auto i = 0; i < ctx->seqFaces->total; i++) {
         auto facerect = reinterpret_cast<CvRect *>(cvGetSeqElem(ctx->seqFaces, i));
         stasm::DetPar detpar; // detpar constructor sets all fields INVALID
-                              // detpar.x and detpar.y is the center of the face rectangle
+        // detpar.x and detpar.y is the center of the face rectangle
         detpar.x = facerect->x + facerect->width / 2.;
         detpar.y = facerect->y + facerect->height / 2.;
         detpar.x -= leftborder; // discount the border we added earlier
@@ -205,6 +221,12 @@ DllMain(HINSTANCE hModule, DWORD fdwReason, LPVOID lpReserved)
         dwProcessId = 0;
         if ((dwCtxIndex = TlsAlloc()) == TLS_OUT_OF_INDEXES)
             return FALSE;
+        lpvData = TlsGetValue(dwCtxIndex);
+        if (lpvData == nullptr) {
+            lpvData = static_cast<LPVOID>(LocalAlloc(LPTR, sizeof(struct ProcessContext)));
+            if (lpvData != nullptr)
+                fIgnore = TlsSetValue(dwCtxIndex, lpvData);
+        }
         break;
     }
 

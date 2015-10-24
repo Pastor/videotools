@@ -66,8 +66,13 @@ struct _VideoPluginStartContext
     VideoPlugin         *plugin;
     HWND                 hMainWnd;
     LPCSTR               pFileName;
+    LPCSTR               pFileTemplate;
     Properties          *prop;
+    DWORD                dwTotalDetectTime;
+    DWORD                dwTotalTime;
     int                  iFrameCount;
+    int                  iFrameGood;
+    int                  iFrameProcessed;
     int                  iWidth;
     int                  iHeight;
     int                  fps;

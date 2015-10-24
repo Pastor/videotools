@@ -39,7 +39,8 @@ struct EyesContext {
 	CvHaarClassifierCascade *left;
 	CvHaarClassifierCascade *right;
 	CvMemStorage            *storage;
-    Logger                  *logger;
+    Logger                  *logCalculator;
+    Logger                  *logMetainfo;
     /** */
 	real					 eyesdistanceTreshold;
 	real					 contrastTreshold;
@@ -96,9 +97,12 @@ __FreeEyesContext(struct EyesContext *ctx)
 {
 	if (ctx != nullptr) {
         __FreeClassifiers(ctx);
-        if (ctx->logger != nullptr)
-            delete ctx->logger;
-        ctx->logger = nullptr;
+        if (ctx->logCalculator != nullptr)
+            delete ctx->logCalculator;
+        ctx->logCalculator = nullptr;
+        if (ctx->logMetainfo != nullptr)
+            delete ctx->logMetainfo;
+        ctx->logMetainfo = nullptr;
 		if (ctx->collection != nullptr)
 			delete ctx->collection;
 		ctx->collection = nullptr;
@@ -110,7 +114,7 @@ LoadPlugin(VideoPlugin *pc)
 {
 	pc->lpstrPluginName = TEXT("Quality");
 	pc->wVersionMajor = 1;
-	pc->wVersionMinor = 2;
+	pc->wVersionMinor = 3;
 	pc->pFree = reinterpret_cast<pfnFreePlugin>(FreePlugin);
 	pc->pProcessFrame = reinterpret_cast<pfnProcessFrame>(ProcessFrame);
 	pc->pStartProcess = reinterpret_cast<pfnStartProcess>(StartProcess);
@@ -158,7 +162,7 @@ ProcessFrame(VideoPluginFrameContext *frameContext)
 				  __checkTreshold(sharpness, ctx->sharpnessTreshold) &&
 				  __checkTreshold(snr, ctx->snrTreshold);
 	//TODO: куда результаты вычислений отдавать?
-    ctx->logger->printf(TEXT("%08d|     %5.01f|   %04.03f|   %04.03f|  %05.01f|        %d|"), frameContext->iFrame, eyesDistance, contrast, sharpness, snr, (result ? 1 : 0));
+    ctx->logCalculator->printf(TEXT("%08d|     %5.01f|   %04.03f|   %04.03f|  %05.01f|        %d|"), frameContext->iFrame, eyesDistance, contrast, sharpness, snr, (result ? 1 : 0));
 	if (result) {
 		++ctx->lFramesCount;
 	} else {
@@ -179,14 +183,18 @@ StartProcess(VideoPluginStartContext *startContext)
     __Get(&ctx);
     {
         auto path = absFilePath("haarcascade_mcs_lefteye.xml");
-        if (ctx->logger == nullptr) {
-            ctx->logger = new Logger(absFilePath("quality.log").c_str());
+        auto fileTemplate = std::string(startContext->pFileTemplate);
+        if (ctx->logCalculator == nullptr) {
+            ctx->logCalculator = new Logger((fileTemplate + ".quality").c_str());
+        }
+        if (ctx->logMetainfo == nullptr) {
+            ctx->logMetainfo = new Logger((fileTemplate + ".metainf").c_str());
         }
         if (ctx->left == nullptr) {
             ctx->left = static_cast<CvHaarClassifierCascade *>(cvLoad(path.c_str()));
             if (ctx->left == nullptr) {
                 /**FIXME: Ошибка загрузки левого */
-                ctx->logger->printf(TEXT("Файл %ls не найден"), std::toString(path).c_str());
+                ctx->logCalculator->printf(TEXT("Файл %ls не найден"), std::toString(path).c_str());
                 return FALSE;
             }
         }
@@ -195,7 +203,7 @@ StartProcess(VideoPluginStartContext *startContext)
             ctx->right = static_cast<CvHaarClassifierCascade *>(cvLoad(path.c_str()));
             if (ctx->right == nullptr) {
                 /**FIXME: Ошибка загрузки правого */
-                ctx->logger->printf(TEXT("Файл %ls не найден"), std::toString(path).c_str());
+                ctx->logCalculator->printf(TEXT("Файл %ls не найден"), std::toString(path).c_str());
                 cvReleaseHaarClassifierCascade(&ctx->left);
                 return FALSE;
             }
@@ -208,22 +216,22 @@ StartProcess(VideoPluginStartContext *startContext)
 		}
     }
 	/**TODO: Загружаем */
-    ctx->logger->event(++dwProcessId);
-    ctx->logger->printf(TEXT("Открывается файл %ls"), std::toString(startContext->pFileName).c_str());
-    ctx->logger->printf(TEXT("Кадров в секунду: %d"), startContext->fps);
-    ctx->logger->printf(TEXT("Ширина кадра    : %d"), startContext->iWidth);
-    ctx->logger->printf(TEXT("Высота кадра    : %d"), startContext->iHeight);
-    ctx->logger->printf(TEXT("Всего кадров    : %d"), startContext->iFrameCount);
+    ctx->logMetainfo->event(++dwProcessId);
+    ctx->logMetainfo->printf(TEXT("Открывается файл %ls"), std::toString(startContext->pFileName).c_str());
+    ctx->logMetainfo->printf(TEXT("Кадров в секунду: %d"), startContext->fps);
+    ctx->logMetainfo->printf(TEXT("Ширина кадра    : %d"), startContext->iWidth);
+    ctx->logMetainfo->printf(TEXT("Высота кадра    : %d"), startContext->iHeight);
+    ctx->logMetainfo->printf(TEXT("Всего кадров    : %d"), startContext->iFrameCount);
 	
 	ctx->eyesdistanceTreshold = startContext->prop->getFloat("limits.frame.distance.treshold", -1);   
     ctx->contrastTreshold = startContext->prop->getFloat("limits.frame.contrast.treshold", -1);
     ctx->sharpnessTreshold = startContext->prop->getFloat("limits.frame.sharp.treshold", -1);
     ctx->snrTreshold = startContext->prop->getFloat("limits.frame.noise.treshold", -1);
-    ctx->logger->printf(TEXT("Пороговое значение расстояния между глазами: %05.03f"), ctx->eyesdistanceTreshold);
-    ctx->logger->printf(TEXT("Пороговое значение контраста               : %05.03f"), ctx->contrastTreshold);
-    ctx->logger->printf(TEXT("Пороговое значение отношения сигнал шум    : %05.03f"), ctx->snrTreshold);
-    ctx->logger->printf(TEXT("Пороговое значение резкости                : %05.03f"), ctx->sharpnessTreshold);
-    ctx->logger->printf(TEXT("    Кадр|Расстояние|Контраст|Резкость|    Шум|Результат|"));
+    ctx->logMetainfo->printf(TEXT("Пороговое значение расстояния между глазами: %05.03f"), ctx->eyesdistanceTreshold);
+    ctx->logMetainfo->printf(TEXT("Пороговое значение контраста               : %05.03f"), ctx->contrastTreshold);
+    ctx->logMetainfo->printf(TEXT("Пороговое значение отношения сигнал шум    : %05.03f"), ctx->snrTreshold);
+    ctx->logMetainfo->printf(TEXT("Пороговое значение резкости                : %05.03f"), ctx->sharpnessTreshold);
+    ctx->logCalculator->printf(TEXT("    Кадр|Расстояние|Контраст|Резкость|    Шум|Результат|"));
 	return TRUE;
 }
 
@@ -240,15 +248,33 @@ StopProcess(VideoPluginStartContext *startContext)
 	ctx->lFramesCount = 0;
 	const auto &cc = (*ctx->collection);
 	std::map<long, int> ordered(cc.begin(), cc.end());
+    auto fileTemplate = std::string(startContext->pFileTemplate);
 
-	fopen_s(&fd, absFilePath("chips.log").c_str(), "a");
-	fprintf(fd, "Для файла: %s\n", startContext->pFileName);
+	fopen_s(&fd, (fileTemplate + ".chipses").c_str(), "a");
+//	fprintf(fd, "Для файла: %s\n", startContext->pFileName);
 	fprintf(fd, "|Продолжительность|Количество|\n");
 	for (auto it = ordered.begin(); it != ordered.end(); ++it) {
 		fprintf(fd, "|        %09d| %09d|\n", (*it).first, (*it).second);
 	}
 	fflush(fd);
 	fclose(fd);
+    /**TODO: MetaInf */
+	{
+        auto total = startContext->dwTotalTime;
+        auto sec = total / 1000 % 60;
+        auto minutes = total / 1000 / 60 % 60;
+        auto hours = total / 1000 / 60 / 60 % 24;
+        ctx->logMetainfo->printf(TEXT("Общее время работы                         : %02d:%02d:%02d"), hours, minutes, sec);
+        ctx->logMetainfo->printf(TEXT("Всего кадров                               : %06d"), startContext->iFrameCount);
+        ctx->logMetainfo->printf(TEXT("Обработано кадров                          : %06d"), startContext->iFrameProcessed);
+        ctx->logMetainfo->printf(TEXT("Обработано хороших                         : %06d, %d%%"), startContext->iFrameGood, (startContext->iFrameGood * 100) / startContext->iFrameCount);
+        total = startContext->dwTotalDetectTime;
+        sec = total / 1000 % 60;
+        minutes = total / 1000 / 60 % 60;
+        hours = total / 1000 / 60 / 60 % 24;
+        ctx->logMetainfo->printf(TEXT("Общее время поиска лица                    : %02d:%02d:%02d"), hours, minutes, sec);
+	}
+    
 	return TRUE;
 }
 

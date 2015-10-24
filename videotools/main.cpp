@@ -53,6 +53,35 @@ static std::mutex      gPluginsMutex;
 INT_PTR CALLBACK
 MainDialog(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
+//#define TEST_PLUGIN
+#if defined(TEST_PLUGIN)
+#pragma comment(lib, "detectStasm.lib")
+extern "C" {
+    __declspec(dllimport)
+        INT __CreateProcess(const char *directory);
+
+    __declspec(dllimport)
+        INT __FrameProcess(IplImage *iFrame, float landmarks[200], int *iLandmarks);
+}
+
+static void
+__TestPlugin()
+{
+    auto i = cvCreateImage(cvSize(2000, 2000), IPL_DEPTH_8U, 1);
+    cvSet(i, CV_RGB(255, 0, 0));
+    auto ret = __CreateProcess("");
+    if (ret) {
+        float landmarks[200];
+        int   iLandmarks;
+
+        __FrameProcess(i, landmarks, &iLandmarks);
+        __asm nop;
+    }
+    cvReleaseImage(&i);
+}
+
+#endif
+
 int WINAPI
 WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
@@ -63,6 +92,10 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
     float                   ttlTime;
     float                   delta;
     int                     iFrame;
+
+#if defined(TEST_PLUGIN)
+    __TestPlugin();
+#endif
 
     sqlite3_initialize();
     gLogger = new Logger("videotools.log");
@@ -82,19 +115,21 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
         if (PeekMessage(&msg, hMainWnd, 0, 0, PM_REMOVE)) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
-        } else {
+        }
+        else {
             Sleep(10);
             newTime = timeGetTime();
-            delta = static_cast<float>(newTime - oldTime)/1000;
+            delta = static_cast<float>(newTime - oldTime) / 1000;
             oldTime = newTime;
             ttlTime += delta;
             if (iFrame >= FIX_FPS) {
                 SendMessage(hMainWnd, WM_FRAME_UPDATE, 0, 0);
                 iFrame = 0;
-            } else {
+            }
+            else {
                 iFrame++;
             }
-        }        
+        }
     } while (msg.message != WM_QUIT);
     DestroyWindow(hMainWnd);
     FreePlugins(gLogger, gPlugins);
@@ -105,7 +140,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
     return EXIT_SUCCESS;
 }
 
-static HBITMAP 
+static HBITMAP
 IplImage2DIB(const IplImage* Image)
 {
     int bpp = Image->nChannels * 8;
@@ -121,7 +156,7 @@ IplImage2DIB(const IplImage* Image)
     RtlZeroMemory(bmih, sizeof(BITMAPINFOHEADER));
     bmih->biSize = sizeof(BITMAPINFOHEADER);
     bmih->biWidth = Image->width;
-    bmih->biHeight = Image->origin ? abs(Image->height) :  -abs(Image->height);
+    bmih->biHeight = Image->origin ? abs(Image->height) : -abs(Image->height);
     bmih->biPlanes = 1;
     bmih->biBitCount = bpp;
     bmih->biCompression = BI_RGB;
@@ -174,9 +209,9 @@ __VideoInfo(CvCapture *cap, HWND hMainWnd)
     }
     if (cap == nullptr)
         return;
-    __WindowPrintf(GetDlgItem(hMainWnd, IDC_INFO_WIDTH), 
+    __WindowPrintf(GetDlgItem(hMainWnd, IDC_INFO_WIDTH),
         TEXT("%d"), static_cast<int>(cvGetCaptureProperty(cap, CV_CAP_PROP_FRAME_WIDTH)));
-    __WindowPrintf(GetDlgItem(hMainWnd, IDC_INFO_HEIGHT), 
+    __WindowPrintf(GetDlgItem(hMainWnd, IDC_INFO_HEIGHT),
         TEXT("%d"), static_cast<int>(cvGetCaptureProperty(cap, CV_CAP_PROP_FRAME_HEIGHT)));
     __WindowPrintf(GetDlgItem(hMainWnd, IDC_INFO_FPS),
         TEXT("%d"), static_cast<int>(cvGetCaptureProperty(cap, CV_CAP_PROP_FPS)));
@@ -185,10 +220,10 @@ __VideoInfo(CvCapture *cap, HWND hMainWnd)
         TEXT("%d"), fc);
     ex = static_cast<int>(cvGetCaptureProperty(cap, CV_CAP_PROP_FOURCC));
     __WindowPrintf(GetDlgItem(hMainWnd, IDC_INFO_FORMAT),
-        TEXT("%c%c%c%c"), 
-        static_cast<TCHAR>(ex & 0XFF), 
-        static_cast<TCHAR>((ex & 0XFF00) >> 8), 
-        static_cast<TCHAR>((ex & 0XFF0000) >> 16), 
+        TEXT("%c%c%c%c"),
+        static_cast<TCHAR>(ex & 0XFF),
+        static_cast<TCHAR>((ex & 0XFF00) >> 8),
+        static_cast<TCHAR>((ex & 0XFF0000) >> 16),
         static_cast<TCHAR>((ex & 0XFF000000) >> 24));
 
     SendMessage(hProgress, PBM_SETSTEP, static_cast<WPARAM>(1), 0);
@@ -205,15 +240,17 @@ struct tagFrameInfo
 
     DWORD       dwMiddleTime;
     DWORD       dwProcessTime;
+    DWORD       dwDetectTime;
 };
 typedef struct tagFrameInfo FrameInfo;
 
-struct tagProcessFramesParam 
+struct tagProcessFramesParam
 {
     CvCapture   *cvCapture;
     Properties  *prop;
     HWND        hMainWnd;
     LPCSTR      pFileName;
+    LPCSTR      pFileTemplate;
 };
 typedef struct tagProcessFramesParam ProcessFramesParam;
 static volatile bool gProcessFramesRuning = false;
@@ -226,7 +263,7 @@ __PluginsStart(VideoPluginStartContext *ctx)
     for (auto it = gPlugins.begin(); it != gPlugins.end(); ++it) {
         ctx->plugin = (*it);
         if ((*it)->isActive == TRUE && (*it)->pStartProcess != nullptr)
-            ( *(*it)->pStartProcess )(ctx);
+            (*(*it)->pStartProcess)(ctx);
     }
 }
 
@@ -251,7 +288,7 @@ __PluginsProcessFrame(VideoPluginFrameContext *ctx)
     for (auto it = gPlugins.begin(); it != gPlugins.end(); ++it) {
         if ((*it)->pProcessFrame != nullptr && (*it)->isActive == TRUE) {
             ctx->plugin = (*it);
-            ( *(*it)->pProcessFrame )(ctx);
+            (*(*it)->pProcessFrame)(ctx);
         }
     }
     ctx->plugin = nullptr;
@@ -268,6 +305,7 @@ __ProcessFrames(LPVOID pParam)
     FrameInfo  fi;
     DWORD      dwStartTime;
     DWORD      dwStartProcess;
+    DWORD      dwStopDetect;
     DWORD      dwAllTime = 0;
 #if defined(USE_CPP_HAAR)
     //cv::CascadeClassifier classifier;
@@ -276,7 +314,7 @@ __ProcessFrames(LPVOID pParam)
     CvMemStorage* storage;
 #endif
     std::vector<cv::Rect>   faces;
-    VideoPluginStartContext ctx = {nullptr, p->hMainWnd};
+    VideoPluginStartContext ctx = { nullptr, p->hMainWnd };
     VideoPluginFrameContext frameCtx;
 
     iFrame = 0;
@@ -284,6 +322,7 @@ __ProcessFrames(LPVOID pParam)
     gProcessFramesRuning = true;
     iStopFrame = static_cast<int>(cvGetCaptureProperty(p->cvCapture, CV_CAP_PROP_FRAME_COUNT));
     fi.iFrameTotal = iStopFrame;
+    fi.dwDetectTime = 0;
 #if defined(USE_CPP_HAAR)
     classifier.load("haarcascade_frontalface_alt2.xml");
     if (classifier.empty()) {
@@ -291,15 +330,15 @@ __ProcessFrames(LPVOID pParam)
         return -1;
     }
 #else
-	{
-		/*TODO: Переписать */
-		char szBuffer[1024 + 40];
+    {
+        /*TODO: Переписать */
+        char szBuffer[1024 + 40];
 
-		GetModuleFileNameA(nullptr, szBuffer, sizeof(szBuffer) - 40);
-		PathRemoveFileSpecA(szBuffer);
-		PathCombineA(szBuffer, szBuffer, "haarcascade_frontalface_alt2.xml");
-		classifier = static_cast<CvHaarClassifierCascade *>(cvLoad(szBuffer));
-	}    
+        GetModuleFileNameA(nullptr, szBuffer, sizeof(szBuffer) - 40);
+        PathRemoveFileSpecA(szBuffer);
+        PathCombineA(szBuffer, szBuffer, "haarcascade_frontalface_alt2.xml");
+        classifier = static_cast<CvHaarClassifierCascade *>(cvLoad(szBuffer));
+    }
     if (classifier == nullptr) {
         SendMessage(p->hMainWnd, WM_FRAME_STOP, 0, 0);
         return -1;
@@ -308,6 +347,7 @@ __ProcessFrames(LPVOID pParam)
 #endif
     faces.reserve(1024);
     ctx.pFileName = p->pFileName;
+    ctx.pFileTemplate = p->pFileTemplate;
     ctx.fps = static_cast<int>(cvGetCaptureProperty(p->cvCapture, CV_CAP_PROP_FPS));
     ctx.iWidth = static_cast<int>(cvGetCaptureProperty(p->cvCapture, CV_CAP_PROP_FRAME_WIDTH));
     ctx.iHeight = static_cast<int>(cvGetCaptureProperty(p->cvCapture, CV_CAP_PROP_FRAME_HEIGHT));
@@ -326,7 +366,7 @@ __ProcessFrames(LPVOID pParam)
             continue;
         }
         iFrame = static_cast<int>(cvGetCaptureProperty(p->cvCapture, CV_CAP_PROP_POS_FRAMES));
-		frameCtx.iQuality = 0;
+        frameCtx.iQuality = 0;
         frameCtx.iFrame = iFrame;
         frameCtx.frame = i;
         frameCtx.logger = gLogger;
@@ -338,6 +378,7 @@ __ProcessFrames(LPVOID pParam)
 #else
         __Detect(classifier, storage, i, faces, &frameCtx.seqFaces);
 #endif
+        fi.dwDetectTime += (timeGetTime() - dwStartTime);
         __PluginsProcessFrame(&frameCtx);
         if (faces.size() > 0 && frameCtx.iQuality)
             fi.iGoodFrames++;
@@ -347,6 +388,10 @@ __ProcessFrames(LPVOID pParam)
         SendMessage(p->hMainWnd, WM_FRAME_NEXT, 0, reinterpret_cast<LPARAM>(&fi));
     }
     SendMessage(p->hMainWnd, WM_FRAME_STOP, 0, 0);
+    ctx.iFrameGood = fi.iGoodFrames;
+    ctx.iFrameProcessed = iFrame - iFailedFrame;
+    ctx.dwTotalDetectTime = fi.dwDetectTime;
+    ctx.dwTotalTime = dwAllTime;
     __PluginsStop(&ctx);
 #if defined(USE_CPP_HAAR)
     //
@@ -394,6 +439,7 @@ INT_PTR CALLBACK
 MainDialog(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     static CHAR  szFileName[MAX_PATH * 2];
+    static CHAR  szFileTemplate[MAX_PATH * 2];
     static HINSTANCE hInstance = nullptr;
     static HFONT hFont = nullptr;
     static auto  cDefColor = RGB(240, 240, 240);
@@ -416,11 +462,11 @@ MainDialog(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     static HWND  hVideoQuality = nullptr;
     static HWND  hFailedFrames = nullptr;
 
-    static HANDLE hProcessThread = nullptr;    
+    static HANDLE hProcessThread = nullptr;
     static DWORD  dwProcessThreadId;
 
     static ProcessFramesParam  threadParam;
-    
+
     switch (uMsg) {
     case WM_INITDIALOG: {
         hInstance = reinterpret_cast<HINSTANCE>(lParam);
@@ -435,7 +481,7 @@ MainDialog(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         hFailedFrames = GetDlgItem(hWnd, IDC_INFO_FAILED_FRAMES);
         hDefBrush = CreateSolidBrush(cDefColor);
         hFont = CreateFont(12, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET,
-                            OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, TEXT("Lucida Console"));
+            OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH, TEXT("Lucida Console"));
         __VideoInfo(cvCapture, hWnd);
         hMainMenu = LoadMenu(hInstance, MAKEINTRESOURCE(IDR_MAINMENU));
         SetMenu(hWnd, hMainMenu);
@@ -498,8 +544,11 @@ MainDialog(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             if (GetOpenFileNameA(&ofn) == TRUE) {
                 cvCapture = cvCreateFileCapture(ofn.lpstrFile);
                 __VideoInfo(cvCapture, hWnd);
+                StringCchCopyA(szFileTemplate, sizeof(szFileTemplate), szFileName);
+                PathRemoveExtensionA(szFileTemplate);
                 threadParam.cvCapture = cvCapture;
                 threadParam.pFileName = szFileName;
+                threadParam.pFileTemplate = szFileTemplate;
                 cQualityColor = RGB(178, 34, 34);
                 SetWindowText(GetDlgItem(hWnd, IDC_START_PROCESS), TEXT("Запуск"));
             }
@@ -526,7 +575,7 @@ MainDialog(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 for (auto it = gPlugins.begin(); it != gPlugins.end(); ++it) {
                     if (wCtrlId == (*it)->dwMenuId) {
                         MENUITEMINFO info;
-                        
+
                         (*it)->isActive = !(*it)->isActive;
                         RtlSecureZeroMemory(&info, sizeof(info));
                         info.cbSize = sizeof(info);
@@ -568,9 +617,11 @@ MainDialog(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         }
         if (quality < 25) {
             cQualityColor = RGB(178, 34, 34);
-        } else if (quality >= 25 && quality < 50) {
+        }
+        else if (quality >= 25 && quality < 50) {
             cQualityColor = RGB(255, 165, 0);
-        } else {
+        }
+        else {
             cQualityColor = RGB(0, 100, 0);
         }
         UpdateWindow(hVideoQuality);
@@ -595,7 +646,8 @@ MainDialog(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
             if (iCurrent >= iFrames) {
                 cvSetCaptureProperty(cvCapture, CV_CAP_PROP_POS_FRAMES, 0);
-            } else {
+            }
+            else {
                 SetWindowText(GetDlgItem(hWnd, IDC_START_PROCESS), TEXT("Продолжить"));
             }
         }
@@ -611,25 +663,25 @@ MainDialog(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     case WM_FRAME_UPDATE: {
         /*IplImage *frame;
         if (cvCapture) {
-            HWND hBitmapWindows = GetDlgItem(hWnd, IDC_FRAME_BITMAP);
-            frame = cvQueryFrame(cvCapture);
-            if (frame) {
-                IplImage *result;
-                RECT      rect;
-                
-                GetClientRect(hWnd, &rect);
-                result = cvCreateImage(cvSize(rect.right, rect.bottom), frame->depth, frame->nChannels);
-                if (hBitmap)
-                    DeleteObject(hBitmap);
-                hBitmap = NULL;
-                cvResize(frame, result, CV_INTER_LINEAR);
-                hBitmap = IplImage2DIB(result);
-                SendDlgItemMessage(hWnd, IDC_FRAME_BITMAP, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
-                UpdateWindow(hBitmapWindows);
-                if (writer)
-                    cvWriteFrame(writer, frame);
-                cvReleaseImage(&result);
-            }
+        HWND hBitmapWindows = GetDlgItem(hWnd, IDC_FRAME_BITMAP);
+        frame = cvQueryFrame(cvCapture);
+        if (frame) {
+        IplImage *result;
+        RECT      rect;
+
+        GetClientRect(hWnd, &rect);
+        result = cvCreateImage(cvSize(rect.right, rect.bottom), frame->depth, frame->nChannels);
+        if (hBitmap)
+        DeleteObject(hBitmap);
+        hBitmap = NULL;
+        cvResize(frame, result, CV_INTER_LINEAR);
+        hBitmap = IplImage2DIB(result);
+        SendDlgItemMessage(hWnd, IDC_FRAME_BITMAP, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
+        UpdateWindow(hBitmapWindows);
+        if (writer)
+        cvWriteFrame(writer, frame);
+        cvReleaseImage(&result);
+        }
         }*/
         break;
     }
@@ -640,7 +692,8 @@ MainDialog(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             SetBkColor(hdc, cDefColor);
             SetBkMode(hdc, TRANSPARENT);
             return reinterpret_cast<INT_PTR>(hDefBrush);
-        } else if (reinterpret_cast<HWND>(lParam) == hVideoQuality) {
+        }
+        else if (reinterpret_cast<HWND>(lParam) == hVideoQuality) {
             SetTextColor(hdc, cQualityColor);
             SetBkColor(hdc, cDefColor);
             SetBkMode(hdc, TRANSPARENT);
