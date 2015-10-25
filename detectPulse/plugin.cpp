@@ -93,7 +93,7 @@ ProcessFrame(VideoPluginFrameContext *frameContext)
     if (frameContext->seqFaces != nullptr && frameContext->seqFaces->total > 0 && ctx->hSession != nullptr) {
         auto ret = ProcessSession(ctx->hSession, frameContext->frame, &ctx->result, 1000 / ctx->fps);
         if (ret) {
-            ctx->logger->printf(TEXT("   %08d|  %03.3f| %03.3f|"), frameContext->iFrame, ctx->result.qValue1, ctx->result.qValue2);
+            ctx->logger->printf(TEXT("   %08d|  %03d| %03d|"), frameContext->iFrame, static_cast<int>(ctx->result.qValue1), static_cast<int>(ctx->result.qValue2));
         }
     }
     frameContext->iQuality += 0;
@@ -114,7 +114,7 @@ StartProcess(VideoPluginStartContext *startContext)
         if (ctx->logger == nullptr) {
             auto fileTemplate = std::string(startContext->pFileTemplate);
             ctx->logger = new Logger((fileTemplate + ".pulses").c_str());
-            ctx->logger->printf(TEXT("Номер кадра|  Пульс|    Шум|"));
+            ctx->logger->printf(TEXT("Номер кадра|Пульс| Шум|"));
         }
         if (ctx->hSession == nullptr) {
             auto path = absFilePath("haarcascade_frontalface_alt2.xml");
