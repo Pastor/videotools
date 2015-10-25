@@ -22,6 +22,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "detectQuality", "detectQual
 		{0C73F5DC-36E2-442B-91F1-CCC29E772353} = {0C73F5DC-36E2-442B-91F1-CCC29E772353}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "detectPulse", "detectPulse\detectPulse.vcxproj", "{1272B65D-9BA6-47C8-9C30-C41BD578C5A2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -44,6 +46,10 @@ Global
 		{1DC6E2C8-A10B-4F37-9DDF-AAED6805DBC9}.Debug|Win32.Build.0 = Debug|Win32
 		{1DC6E2C8-A10B-4F37-9DDF-AAED6805DBC9}.Release|Win32.ActiveCfg = Release|Win32
 		{1DC6E2C8-A10B-4F37-9DDF-AAED6805DBC9}.Release|Win32.Build.0 = Release|Win32
+		{1272B65D-9BA6-47C8-9C30-C41BD578C5A2}.Debug|Win32.ActiveCfg = Debug|Win32
+		{1272B65D-9BA6-47C8-9C30-C41BD578C5A2}.Debug|Win32.Build.0 = Debug|Win32
+		{1272B65D-9BA6-47C8-9C30-C41BD578C5A2}.Release|Win32.ActiveCfg = Release|Win32
+		{1272B65D-9BA6-47C8-9C30-C41BD578C5A2}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -51,5 +57,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{6C2E276D-83EF-441B-B59A-C705102C6E11} = {2099E6AB-6801-41FD-A5D7-C623EC7D1E05}
 		{1DC6E2C8-A10B-4F37-9DDF-AAED6805DBC9} = {2099E6AB-6801-41FD-A5D7-C623EC7D1E05}
+		{1272B65D-9BA6-47C8-9C30-C41BD578C5A2} = {2099E6AB-6801-41FD-A5D7-C623EC7D1E05}
 	EndGlobalSection
 EndGlobal
