@@ -1,6 +1,6 @@
 #include "seriesanalyzer.h"
 
-SeriesAnalyzer::SeriesAnalyzer():
+SeriesAnalyzer::SeriesAnalyzer()
 {
     setWindowsize(SERIESANALYZER_OVERLAY);
     setOverlaysize(SERIESANALYZER_WINDOWSIZE);
@@ -19,9 +19,9 @@ void SeriesAnalyzer::setOverlaysize(uint value)
         m_overlaysize = value;
         m_overlaypos = 0;
         if(m_overlaysize > 0)   {
-            if(v_overlay != NULL)   {
+            if(v_overlay)   {
                 delete[] v_overlay;
-                v_overlay = NULL;
+                v_overlay = 0;
             }
             v_overlay = new real[m_overlaysize];
         }
@@ -33,9 +33,9 @@ void SeriesAnalyzer::setWindowsize(uint value)
     m_windowsize = value;
     m_windowpos = 0;
     if(m_windowsize > 0)   {
-        if(v_window != NULL)   {
+        if(v_window)   {
             delete[] v_window;
-            v_window = NULL;
+            v_window = 0;
         }
         v_window = new real[m_windowsize];
     }
@@ -57,7 +57,7 @@ void SeriesAnalyzer::enrollNextValue(real value)
 
     if( m_windowpos == m_windowsize)    {
         m_windowpos = 0;
-        enrollMoments();
+        computeMoments();
     }
 }
 
@@ -78,7 +78,7 @@ void SeriesAnalyzer::setIntervalFactor(real value)
         m_intervalfactor = value;
 }
 
-void SeriesAnalyzer::evaluateMoments()
+void SeriesAnalyzer::computeMoments()
 {
     real mean = 0.0;
     for(uint i = 0; i < m_windowsize; i++)
@@ -106,7 +106,7 @@ void SeriesAnalyzer::evaluateMoments()
         m_seria.endframe = (m_counter + 1)*m_windowsize;
         updateOutput();
         m_state = v_type[loop(m_counter - 2)];
-        m_seria.type = state;
+        m_seria.type = m_state;
         m_seria.startframe = m_seria.endframe + 1;
     }
     m_counter++;

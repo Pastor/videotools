@@ -37,3 +37,7 @@ Debug
 .vc
 .Result
 3rdparty/*.docx
+
+
+Qtdesigner
+*.pro.user

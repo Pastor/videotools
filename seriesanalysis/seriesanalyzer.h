@@ -17,6 +17,7 @@
 #ifndef SERIESANALYZER_H
 #define SERIESANALYZER_H
 
+#include <cmath>
 #include <vector>
 
 #define SERIESANALYZER_OVERLAY 0
@@ -68,7 +69,7 @@ private:
 
     uint median(char a, char b, char c) const;  // median of three elements
     int loop(int diff) const;                   // loop index operation
-    void enrollMoments();                       // evaluate moment based ob window data and increment m_counter
+    void computeMoments();                       // evaluate moment based ob window data and increment m_counter
     void updateOutput();                        // pushes m_seria into v_series
 };
 
