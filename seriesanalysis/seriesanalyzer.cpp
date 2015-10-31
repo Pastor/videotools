@@ -1,10 +1,17 @@
 #include "seriesanalyzer.h"
 
-SeriesAnalyzer::SeriesAnalyzer()
+SeriesAnalyzer::SeriesAnalyzer(uint window, uint overlay, real interval)
 {
-    setWindowsize(SERIESANALYZER_OVERLAY);
-    setOverlaysize(SERIESANALYZER_WINDOWSIZE);
-    setIntervalFactor(SERIESANALYZER_INTERVALFACTOR);
+    m_seria.type = 0;
+    m_seria.startframe = 1;
+    v_window = NULL;
+    v_overlay = NULL;
+    m_counter = 0;
+    m_windowpos = 0;
+    m_overlaypos = 0;
+    setWindowsize(window);
+    setOverlaysize(overlay);
+    setIntervalFactor(interval);
 }
 
 SeriesAnalyzer::~SeriesAnalyzer()
@@ -19,10 +26,7 @@ void SeriesAnalyzer::setOverlaysize(uint value)
         m_overlaysize = value;
         m_overlaypos = 0;
         if(m_overlaysize > 0)   {
-            if(v_overlay)   {
-                delete[] v_overlay;
-                v_overlay = 0;
-            }
+            delete[] v_overlay;
             v_overlay = new real[m_overlaysize];
         }
     }
@@ -33,10 +37,7 @@ void SeriesAnalyzer::setWindowsize(uint value)
     m_windowsize = value;
     m_windowpos = 0;
     if(m_windowsize > 0)   {
-        if(v_window)   {
-            delete[] v_window;
-            v_window = 0;
-        }
+        delete[] v_window;
         v_window = new real[m_windowsize];
     }
 }
@@ -63,13 +64,16 @@ void SeriesAnalyzer::enrollNextValue(real value)
 
 void SeriesAnalyzer::enrollArray(real *pt, uint length)
 {
-    for(int i = 0; i < length; i++)
+    for(uint i = 0; i < length; i++)
         enrollNextValue(pt[i]);
 }
 
 void SeriesAnalyzer::clear()
 {
     v_series.clear();
+    m_counter = 0;
+    m_windowpos = 0;
+    m_overlaypos = 0;
 }
 
 void SeriesAnalyzer::setIntervalFactor(real value)
@@ -87,7 +91,7 @@ void SeriesAnalyzer::computeMoments()
     real stdev = 0.0;
     for(uint i = 0; i < m_windowsize; i++)
         stdev += (v_window[i] - mean)*(v_window[i] - mean);
-    stdev /= (m_windowsize - 1);
+    stdev = std::sqrt(stdev / (m_windowsize - 1));
 
     v_means[loop(m_counter)] = mean;
     v_stdevs[loop(m_counter)] = stdev / std::sqrt(m_windowsize);
@@ -95,21 +99,26 @@ void SeriesAnalyzer::computeMoments()
     real d = std::abs( v_means[loop(m_counter)] - v_means[loop(m_counter-1)] );
     real s = ( v_stdevs[loop(m_counter)] + v_stdevs[loop(m_counter-1)] ) / 2.0;
 
-    if( d < m_intervalfactor*s)
+    if( d < (s * m_intervalfactor) )
         v_type[loop(m_counter)] = 0;  // process is likely to be stationar
     else
         v_type[loop(m_counter)] = 1;  // process is likely to be transient
 
     v_type[loop(m_counter - 2)] = median(v_type[loop(m_counter - 3)],v_type[loop(m_counter - 2)],v_type[loop(m_counter - 1)]);
 
-    if( m_state != v_type[loop(m_counter - 2)]) {
-        m_seria.endframe = (m_counter + 1)*m_windowsize;
+    if( m_seria.type != v_type[loop(m_counter - 2)]) {
+        m_seria.endframe = m_windowsize + (m_windowsize - m_overlaysize)*m_counter;
         updateOutput();
-        m_state = v_type[loop(m_counter - 2)];
-        m_seria.type = m_state;
+        m_seria.type = v_type[loop(m_counter - 2)];
         m_seria.startframe = m_seria.endframe + 1;
     }
     m_counter++;
+}
+
+void SeriesAnalyzer::endAnalysis()
+{
+    m_seria.endframe = m_windowsize + (m_windowsize - m_overlaysize)*(m_counter - 1);
+    updateOutput();
 }
 
 void SeriesAnalyzer::updateOutput()

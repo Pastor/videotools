@@ -20,7 +20,7 @@
 #include <cmath>
 #include <vector>
 
-#define SERIESANALYZER_OVERLAY 0
+#define SERIESANALYZER_OVERLAYSIZE 10
 #define SERIESANALYZER_WINDOWSIZE 50
 #define SERIESANALYZER_VECTORSIZE 4
 #define SERIESANALYZER_INTERVALFACTOR 3.0
@@ -38,8 +38,9 @@ struct DataSeria
 class SeriesAnalyzer
 {
 public:
-    SeriesAnalyzer();
+    SeriesAnalyzer(uint window = SERIESANALYZER_WINDOWSIZE, uint overlay = SERIESANALYZER_OVERLAYSIZE, real interval = SERIESANALYZER_INTERVALFACTOR);
     ~SeriesAnalyzer();
+
     void setOverlaysize(uint value);        // an interface to m_overlay
     void setWindowsize(uint value);         // an interface to m_windowsize
     void enrollNextValue(real value);       // enrolls value
@@ -47,6 +48,7 @@ public:
     void clear();                           // clears v_series internal data
     void setIntervalFactor(real value);     // an interface to m_intervalfactor
     int getRecordsCount() const;            // returns number of counts stored in v_series
+    void endAnalysis();                     // should be called to make last record in v_series
     DataSeria getRecord(int index) const;   // returns output record by index
 
 private:
@@ -62,8 +64,7 @@ private:
     real v_means[SERIESANALYZER_VECTORSIZE];    // stores means of input data
     real v_stdevs[SERIESANALYZER_VECTORSIZE];   // stores stdevs of input data
     uint v_type[SERIESANALYZER_VECTORSIZE];     // stores types of input data series
-    uint m_state;                               // stores last state of type determination
-    DataSeria m_seria;                          // data series
+    DataSeria m_seria;                          // stores last data series information
     int m_counter;                              // stores number of enrolled windows
     std::vector<DataSeria> v_series;            // accumulates series for output
 

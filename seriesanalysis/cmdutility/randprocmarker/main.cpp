@@ -40,21 +40,33 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    SeriesAnalyzer analyzer(300, 0, 2.0);
+
     char buffer[BUFFER_LENGTH];
     std::string tempstr;
     real tempvalue = 0.0;
-    for(int i = 0; i < row; i++)
+    for(uint i = 0; i < row; i++)
         fstream.getline(buffer,BUFFER_LENGTH,'\n');
-
-
     while(fstream)  {
-        for(int j = 0; j < column; j++) {
+        for(uint j = 0; j < column; j++) {
             fstream.getline(buffer,BUFFER_LENGTH,'\t');
         }
         fstream.getline(buffer,BUFFER_LENGTH,'\n');
         tempstr = buffer;
         tempvalue = str2real(tempstr);
+        analyzer.enrollNextValue(tempvalue);
         //std::cout << tempvalue << '\n';
+    }
+    analyzer.endAnalysis();
+
+    int n = analyzer.getRecordsCount();
+    std::cout << n << " series found" << std::endl;
+    DataSeria seria;
+    for(int i = 0; i < n; i++)  {
+        seria = analyzer.getRecord(i);
+        std::cout << "Seria_" << i << ", from " << seria.startframe
+                  << " to " << seria.endframe << ", type " << seria.type
+                  << std::endl;
     }
 
     return 0;
