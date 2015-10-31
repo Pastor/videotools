@@ -4,11 +4,15 @@ SeriesAnalyzer::SeriesAnalyzer(uint window, uint overlay, real interval)
 {
     m_seria.type = 0;
     m_seria.startframe = 1;
-    v_window = NULL;
-    v_overlay = NULL;
     m_counter = 0;
     m_windowpos = 0;
-    m_overlaypos = 0;
+    m_overlaypos = 0;       
+    for(uint i = 0; i < SERIESANALYZER_VECTORSIZE; i++) {
+        v_type[i] = 0;
+    }
+
+    v_window = NULL;
+    v_overlay = NULL;
     setWindowsize(window);
     setOverlaysize(overlay);
     setIntervalFactor(interval);
@@ -44,7 +48,7 @@ void SeriesAnalyzer::setWindowsize(uint value)
 
 void SeriesAnalyzer::enrollNextValue(real value)
 {
-    if((m_windowpos == 0) && (m_overlaysize > 0))    {
+    if((m_windowpos == 0) && (m_overlaysize > 0) && (m_counter > 0))    {
        for(uint i = 0; i < m_overlaysize; i++)
            v_window[i] = v_overlay[i];
        m_windowpos += m_overlaysize;
@@ -100,14 +104,14 @@ void SeriesAnalyzer::computeMoments()
     real s = ( v_stdevs[loop(m_counter)] + v_stdevs[loop(m_counter-1)] ) / 2.0;
 
     if( d < (s * m_intervalfactor) )
-        v_type[loop(m_counter)] = 0;  // process is likely to be stationar
+        v_type[loop(m_counter - 1)] = 0;  // process is likely to be stationar
     else
-        v_type[loop(m_counter)] = 1;  // process is likely to be transient
+        v_type[loop(m_counter - 1)] = 1;  // process is likely to be transient
 
     v_type[loop(m_counter - 2)] = median(v_type[loop(m_counter - 3)],v_type[loop(m_counter - 2)],v_type[loop(m_counter - 1)]);
 
     if( m_seria.type != v_type[loop(m_counter - 2)]) {
-        m_seria.endframe = m_windowsize + (m_windowsize - m_overlaysize)*m_counter;
+        m_seria.endframe = m_windowsize + (m_windowsize - m_overlaysize)*(m_counter - 3); // this equation takes into account time shift
         updateOutput();
         m_seria.type = v_type[loop(m_counter - 2)];
         m_seria.startframe = m_seria.endframe + 1;
@@ -117,7 +121,7 @@ void SeriesAnalyzer::computeMoments()
 
 void SeriesAnalyzer::endAnalysis()
 {
-    m_seria.endframe = m_windowsize + (m_windowsize - m_overlaysize)*(m_counter - 1);
+    m_seria.endframe = m_windowsize + (m_windowsize - m_overlaysize)*(m_counter - 1); // end of data
     updateOutput();
 }
 

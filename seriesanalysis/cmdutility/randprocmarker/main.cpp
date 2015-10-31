@@ -12,6 +12,7 @@ int str2int(const std::string &str);
 int main(int argc, char *argv[])
 {   
     std::ifstream fstream;
+    SeriesAnalyzer analyzer;
     uint row = 0;
     uint column = 0;
     std::string str;
@@ -30,17 +31,36 @@ int main(int argc, char *argv[])
                 str = (++(*argv));
                 column = str2int(str);
                 break;
+            case 'w':
+                str = (++(*argv));
+                analyzer.setWindowsize( str2int(str) );
+                break;
+            case 'o':
+                str = (++(*argv));
+                analyzer.setOverlaysize( str2int(str) );
+                break;
+            case 'k':
+                str = (++(*argv));
+                analyzer.setIntervalFactor( str2real(str) );
+                break;
+            case 'h':
+                std::cout << APP_NAME << " v." << APP_VERS << "\n"
+                          << "Options:\n"
+                          << " -i[filename] - input filename\n"
+                          << " -r[row] - set start row number\n"
+                          << " -c[col] - set column\n"
+                          << " -w[x] - set window size to x, default: " << SERIESANALYZER_WINDOWSIZE << "\n"
+                          << " -o[x] - set overlay to x, default: " << SERIESANALYZER_OVERLAYSIZE << "\n"
+                          << " -k[x] - set confidence interval koeffitient to x, default: " << SERIESANALYZER_INTERVALFACTOR <<"\n"
+                          << APP_DESIGNER;
+                return 1;
             }
     }
 
-    if(fstream.is_open())   {
-        std::cout << "File opened" << std::endl;
-    } else {
-        std::cout << "Failed to open" << std::endl;
+    if(!fstream.is_open())   {
+        std::cout << "Failed to open file" << std::endl;
         return -1;
     }
-
-    SeriesAnalyzer analyzer(300, 0, 2.0);
 
     char buffer[BUFFER_LENGTH];
     std::string tempstr;
@@ -60,15 +80,14 @@ int main(int argc, char *argv[])
     analyzer.endAnalysis();
 
     int n = analyzer.getRecordsCount();
-    std::cout << n << " series found" << std::endl;
+    std::cout << "File processed, " << n << " series found:" << std::endl;
     DataSeria seria;
     for(int i = 0; i < n; i++)  {
         seria = analyzer.getRecord(i);
-        std::cout << "Seria_" << i << ", from " << seria.startframe
-                  << " to " << seria.endframe << ", type " << seria.type
+        std::cout << "Seria" << i+1 << "\tfrom " << seria.startframe
+                  << " to\t" << seria.endframe << ", type " << seria.type
                   << std::endl;
     }
-
     return 0;
 }
 
