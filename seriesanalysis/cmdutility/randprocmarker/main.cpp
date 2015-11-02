@@ -16,6 +16,7 @@ int main(int argc, char *argv[])
     uint row = 0;
     uint column = 0;
     std::string str;
+    char deliminator = '\t';
 
     while( (--argc > 0) && ((*++argv)[0] == '-') ) {
             char option = *++argv[0];
@@ -43,6 +44,9 @@ int main(int argc, char *argv[])
                 str = (++(*argv));
                 analyzer.setIntervalFactor( str2real(str) );
                 break;
+            case 'd':
+                deliminator = *(++(*argv));
+                break;
             case 'h':
                 std::cout << APP_NAME << " v." << APP_VERS << "\n"
                           << "Options:\n"
@@ -51,7 +55,8 @@ int main(int argc, char *argv[])
                           << " -c[col] - set column\n"
                           << " -w[x] - set window size to x, default: " << SERIESANALYZER_WINDOWSIZE << "\n"
                           << " -o[x] - set overlay to x, default: " << SERIESANALYZER_OVERLAYSIZE << "\n"
-                          << " -k[x] - set confidence interval koeffitient to x, default: " << SERIESANALYZER_INTERVALFACTOR <<"\n"
+                          << " -k[x] - set confidence interval koeffitient to x, default: " << SERIESANALYZER_INTERVALFACTOR << "\n"
+                          << " -d[x] - deliminator symbol, default \t: " << SERIESANALYZER_INTERVALFACTOR <<"\n"
                           << APP_DESIGNER;
                 return 1;
             }
@@ -68,14 +73,12 @@ int main(int argc, char *argv[])
     for(uint i = 0; i < row; i++)
         fstream.getline(buffer,BUFFER_LENGTH,'\n');
     while(fstream)  {
-        for(uint j = 0; j < column; j++) {
-            fstream.getline(buffer,BUFFER_LENGTH,'\t');
-        }
+        for(uint j = 0; j < column; j++)
+            fstream.getline(buffer,BUFFER_LENGTH, deliminator);
         fstream.getline(buffer,BUFFER_LENGTH,'\n');
         tempstr = buffer;
         tempvalue = str2real(tempstr);
         analyzer.enrollNextValue(tempvalue);
-        //std::cout << tempvalue << '\n';
     }
     analyzer.endAnalysis();
 

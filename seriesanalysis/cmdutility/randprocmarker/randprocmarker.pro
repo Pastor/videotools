@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 TARGET = randprocmarker
-VERSION = 1.0
+VERSION = 1.1
 
 DEFINES +=  APP_NAME=\\\"$${TARGET}\\\" \
             APP_VERS=\\\"$${VERSION}\\\" \
