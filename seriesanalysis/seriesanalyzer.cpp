@@ -98,7 +98,7 @@ void SeriesAnalyzer::computeMoments()
     stdev = std::sqrt(stdev / (m_windowsize - 1));
 
     v_means[loop(m_counter)] = mean;
-    v_stdevs[loop(m_counter)] = stdev / std::sqrt(m_windowsize);
+    v_stdevs[loop(m_counter)] = stdev / std::sqrt((real)m_windowsize);
 
     real d = std::abs( v_means[loop(m_counter)] - v_means[loop(m_counter-1)] );
     real s = ( v_stdevs[loop(m_counter)] + v_stdevs[loop(m_counter-1)] ) / 2.0;

@@ -22,3 +22,5 @@ SOURCES += main.cpp \
 HEADERS += ../../seriesanalyzer.h
 
 INCLUDEPATH += ../../
+
+mingw: DEFINES += NULL=0

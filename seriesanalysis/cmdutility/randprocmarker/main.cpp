@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
     for(int i = 0; i < n; i++)  {
         seria = analyzer.getRecord(i);
         std::cout << "Seria" << i+1 << "\tfrom " << seria.startframe
-                  << " to\t" << seria.endframe << ", type " << seria.type
+                  << "\tto" << seria.endframe << "\ttype " << seria.type
                   << std::endl;
     }
     return 0;
