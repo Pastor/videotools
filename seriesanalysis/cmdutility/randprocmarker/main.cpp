@@ -4,7 +4,7 @@
 #include <string>
 #include "seriesanalyzer.h"
 
-#define BUFFER_LENGTH 256
+#define BUFFER_LENGTH 1280
 
 real str2real(const std::string &str);
 int str2int(const std::string &str);
@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
     uint row = 0;
     uint column = 0;
     std::string str;
-    char deliminator = '\t';
+    char delim = '\t';
 
     while( (--argc > 0) && ((*++argv)[0] == '-') ) {
             char option = *++argv[0];
@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
                 analyzer.setIntervalFactor( str2real(str) );
                 break;
             case 'd':
-                deliminator = *(++(*argv));
+                delim = *(++(*argv));
                 break;
             case 'h':
                 std::cout << APP_NAME << " v." << APP_VERS << "\n"
@@ -56,9 +56,8 @@ int main(int argc, char *argv[])
                           << " -w[x] - set window size to x, default: " << SERIESANALYZER_WINDOWSIZE << "\n"
                           << " -o[x] - set overlay to x, default: " << SERIESANALYZER_OVERLAYSIZE << "\n"
                           << " -k[x] - set confidence interval koeffitient to x, default: " << SERIESANALYZER_INTERVALFACTOR << "\n"
-                          << " -d[x] - deliminator symbol, default \t: " << SERIESANALYZER_INTERVALFACTOR <<"\n"
-                          << APP_DESIGNER;
-                return 1;
+                          << " -d[x] - deliminator symbol, default tab\n" << APP_DESIGNER;
+                return 0;
             }
     }
 
@@ -71,14 +70,16 @@ int main(int argc, char *argv[])
     std::string tempstr;
     real tempvalue = 0.0;
     for(uint i = 0; i < row; i++)
-        fstream.getline(buffer,BUFFER_LENGTH,'\n');
+        if(fstream)
+            fstream.getline(buffer,BUFFER_LENGTH,'\n');
     while(fstream)  {
         for(uint j = 0; j < column; j++)
-            fstream.getline(buffer,BUFFER_LENGTH, deliminator);
+            fstream.getline(buffer,BUFFER_LENGTH, delim);
         fstream.getline(buffer,BUFFER_LENGTH,'\n');
         tempstr = buffer;
         tempvalue = str2real(tempstr);
         analyzer.enrollNextValue(tempvalue);
+        //std::cout << buffer << std::endl;
     }
     analyzer.endAnalysis();
 
@@ -87,8 +88,8 @@ int main(int argc, char *argv[])
     DataSeria seria;
     for(int i = 0; i < n; i++)  {
         seria = analyzer.getRecord(i);
-        std::cout << "Seria" << i+1 << "\tfrom " << seria.startframe
-                  << "\tto" << seria.endframe << "\ttype " << seria.type
+        std::cout << "Seria" << i+1 << ":\t" << seria.startframe
+                  << " - " << seria.endframe << ", type " << seria.type
                   << std::endl;
     }
     return 0;

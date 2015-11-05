@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 TARGET = randprocmarker
-VERSION = 1.1
+VERSION = 1.2
 
 DEFINES +=  APP_NAME=\\\"$${TARGET}\\\" \
             APP_VERS=\\\"$${VERSION}\\\" \
@@ -23,4 +23,5 @@ HEADERS += ../../seriesanalyzer.h
 
 INCLUDEPATH += ../../
 
-mingw: DEFINES += NULL=0
+mingw:  DEFINES += NULL=0
+

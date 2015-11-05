@@ -2,15 +2,7 @@
 
 SeriesAnalyzer::SeriesAnalyzer(uint window, uint overlay, real interval)
 {
-    m_seria.type = 0;
-    m_seria.startframe = 1;
-    m_counter = 0;
-    m_windowpos = 0;
-    m_overlaypos = 0;       
-    for(uint i = 0; i < SERIESANALYZER_VECTORSIZE; i++) {
-        v_type[i] = 0;
-    }
-
+    clear();
     v_window = NULL;
     v_overlay = NULL;
     setWindowsize(window);
@@ -74,10 +66,14 @@ void SeriesAnalyzer::enrollArray(real *pt, uint length)
 
 void SeriesAnalyzer::clear()
 {
-    v_series.clear();
+    m_seria.type = 0;
+    m_seria.startframe = 1;
     m_counter = 0;
     m_windowpos = 0;
     m_overlaypos = 0;
+    for(uint i = 0; i < SERIESANALYZER_VECTORSIZE; i++)
+        v_type[i] = 0;
+    v_series.clear();
 }
 
 void SeriesAnalyzer::setIntervalFactor(real value)
@@ -110,11 +106,13 @@ void SeriesAnalyzer::computeMoments()
 
     v_type[loop(m_counter - 2)] = median(v_type[loop(m_counter - 3)],v_type[loop(m_counter - 2)],v_type[loop(m_counter - 1)]);
 
-    if( m_seria.type != v_type[loop(m_counter - 2)]) {
-        m_seria.endframe = m_windowsize + (m_windowsize - m_overlaysize)*(m_counter - 3); // this equation takes into account time shift
-        updateOutput();
-        m_seria.type = v_type[loop(m_counter - 2)];
-        m_seria.startframe = m_seria.endframe + 1;
+    if(m_counter > 2)   {
+        if( m_seria.type != v_type[loop(m_counter - 2)]) {
+            m_seria.endframe = m_windowsize + (m_windowsize - m_overlaysize)*(m_counter - 3); // this equation takes into account time shift
+            updateOutput();
+            m_seria.type = v_type[loop(m_counter - 2)];
+            m_seria.startframe = m_seria.endframe + 1;
+        }
     }
     m_counter++;
 }
