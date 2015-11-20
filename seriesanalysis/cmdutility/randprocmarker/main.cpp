@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
         ofstream.write(oline, 14);
         for(int i = 0; i < n; i++) {
             seria = analyzer.getRecord(i);
-            for(int j = seria.startframe; j < seria.endframe; j++) {
+            for(int j = seria.startframe; j <= seria.endframe; j++) {
                 std::sprintf(oline,"\n%06d%c%d", j, delim, seria.type);
                 ofstream.write(oline, 9);
             }
