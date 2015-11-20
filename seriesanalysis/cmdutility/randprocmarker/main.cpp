@@ -5,6 +5,7 @@
 #include "seriesanalyzer.h"
 
 #define BUFFER_LENGTH 1280
+#define OUTPUT_BUFFER_LENGTH 16
 
 real str2real(const std::string &str);
 int str2int(const std::string &str);
@@ -17,6 +18,8 @@ int main(int argc, char *argv[])
     uint column = 0;
     std::string str;
     char delim = '\t';
+    bool f_output = false;
+    std::ofstream ofstream;
 
     while( (--argc > 0) && ((*++argv)[0] == '-') ) {
             char option = *++argv[0];
@@ -47,6 +50,10 @@ int main(int argc, char *argv[])
             case 'd':
                 delim = *(++(*argv));
                 break;
+            case 'f':
+                f_output = true;
+                ofstream.open(++(*argv));
+                break;
             case 'h':
                 std::cout << APP_NAME << " v." << APP_VERS << "\n"
                           << "Options:\n"
@@ -56,15 +63,22 @@ int main(int argc, char *argv[])
                           << " -w[x] - set window size to x, default: " << SERIESANALYZER_WINDOWSIZE << "\n"
                           << " -o[x] - set overlay to x, default: " << SERIESANALYZER_OVERLAYSIZE << "\n"
                           << " -k[x] - set confidence interval koeffitient to x, default: " << SERIESANALYZER_INTERVALFACTOR << "\n"
-                          << " -d[x] - deliminator symbol, default tab\n" << APP_DESIGNER;
+                          << " -d[x] - deliminator symbol, default tabulation\n"
+                          << " -f[filename] - output filename, output containes all counts with marks\n" << APP_DESIGNER;
                 return 0;
             }
     }
 
     if(!fstream.is_open())   {
-        std::cout << "Failed to open file" << std::endl;
+        std::cout << "Failed to open input file" << std::endl;
         return -1;
     }
+
+    if(f_output)
+        if(!ofstream.is_open()) {
+            std::cout << "Failed to open output file" << std::endl;
+            return -2;
+        }
 
     char buffer[BUFFER_LENGTH];
     std::string tempstr;
@@ -91,6 +105,20 @@ int main(int argc, char *argv[])
         std::cout << "Seria" << i+1 << ":\t" << seria.startframe
                   << " - " << seria.endframe << ", type " << seria.type
                   << std::endl;
+    }
+
+    if(f_output) {
+        char oline[OUTPUT_BUFFER_LENGTH];
+        std::sprintf(oline, "Frame%cProctype", delim);
+        ofstream.write(oline, 14);
+        for(int i = 0; i < n; i++) {
+            seria = analyzer.getRecord(i);
+            for(int j = seria.startframe; j < seria.endframe; j++) {
+                std::sprintf(oline,"\n%06d%c%d", j, delim, seria.type);
+                ofstream.write(oline, 9);
+            }
+        }
+        std::cout << "Output file recorded";
     }
     return 0;
 }
