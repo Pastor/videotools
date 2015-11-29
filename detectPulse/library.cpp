@@ -14,17 +14,17 @@
 #define TRUE  1
 #define FALSE 0
 #endif
-#define OBJECT_MINSIZE2         169
-#define BOTTOM_LIMIT           0.7 // in s^-1, it is 42 bpm
-#define TOP_LIMIT              4.5 // in s^-1, it is 270 bpm
-#define SNR_TRESHOLD           1.5 // a treshold for the frequency update
+#define OBJECT_MINSIZE2        100
+#define BOTTOM_LIMIT           0.8 // in s^-1, it is 48 bpm
+#define TOP_LIMIT              3.0 // in s^-1, it is 180 bpm
+#define SNR_TRESHOLD           2.0 // a threshold for the frequency update
 #define HALF_INTERVAL          2   // defines the number of averaging indexes when frequency is evaluated, this value should be >= 1
-#define DIGITAL_FILTER_LENGTH  2   // in counts
+#define DIGITAL_FILTER_LENGTH  3   // in counts
 #define WATCH_DOG_TRESHOLD     1000 // expressed in milliseconds, it is period of doCompute() call for frequency update
 
 
 class HardThread {
-    enum ColorChannel { Red, Green, Blue };
+    enum ColorChannel { Red, Green, Blue, RGB};
 public:
     HardThread(short lenData, short lenSize);
     ~HardThread();
@@ -50,28 +50,24 @@ private:
     double               *ptData_ch2; //a pointer to spattialy averaged data (you should use it to write data to an instance of a class)
     double               *ptDataForFFT; //a pointer to data prepared for FFT
     double               *ptAmplitudeSpectrum;
-    double                ch1_mean;   //a variable for mean value in channel1 storing
-    double                ch2_mean;   //a variable for mean value in channel2 storing
     int                  *ptTime; //a pointer to an array for frame periods storing (values in milliseconds thus unsigned int)
     double                HRfrequency; //a variable for storing a last evaluated frequency of the 'strongest' harmonic
     unsigned int          curpos; //a current position I meant
     short                 datalength; //a length of data array
     short                 bufferlength; //a lenght of sub data array for FFT (bufferlength should be <= datalength)
     double               *ptX; // a pointer to input counts history, for digital filtration
-    short                 loop(short) const; //a function that return a loop-index
-    short                 loop_for_ptX(short) const; //a function that return a loop-index
-    bool                  RGB_flag;
     fftw_plan             m_plan;
     ColorChannel          m_channel; // determines which color channel is enrolled by WriteToDataOneColor(...) method
-    double               *pt_Youtput; // a pointer to a vector of digital filter output
-    double               *pt_Xoutput; // for intermediate result storage
+	short				  m_averageInterval;
     short                 m_watchDog;
+	short                 loop(short) const; //a function that return a loop-index
+    short                 loop_for_ptX(short) const; //a function that return a loop-index
 };
 
 inline short
 HardThread::loop(short difference) const
 {
-    return ((datalength + (difference % datalength)) % datalength); // have finded it on wikipedia ), it always returns positive result
+    return ((datalength + (difference % datalength)) % datalength);
 }
 //---------------------------------------------------------------------------
 inline short
@@ -96,7 +92,7 @@ CreateSession(SessionConfig * pConfig)
     auto hSession = static_cast<struct __SessionHandle *>(calloc(1, sizeof(struct __SessionHandle)));
     hSession->magic = MAGIC_NUMBER;
     std::memcpy(&hSession->config, pConfig, sizeof(SessionConfig));
-    hSession->hard = new HardThread(256/**pConfig->iHarmonicDataSize*/, 256/*pConfig->iHarmonicBuffSize*/);
+    hSession->hard = new HardThread(256/*pConfig->iHarmonicDataSize*/, 256/*pConfig->iHarmonicBuffSize*/);
     if (!hSession->hard->loadClassifier(pConfig->szClassifierFile)) {
         DestroySession(hSession);
         return nullptr;
@@ -130,14 +126,12 @@ ProcessSession(SessionHandle hSession, void *pImage, ProcessResult * pResult, in
 
 HardThread::HardThread(short lenData, short lenSize)
     : SNRE(-5.0),
-    ch1_mean(0.0),
-    ch2_mean(0.0),
     HRfrequency(0.0),
     curpos(0),
     datalength(lenData),
     bufferlength(lenSize),
-    RGB_flag(false),
     m_channel(Green),
+	m_averageInterval(15),
     m_watchDog(WATCH_DOG_TRESHOLD)
 {
     ptData_ch1 = new double[datalength];
@@ -210,8 +204,11 @@ HardThread::doOpencvPart(const cv::Mat & mat, ProcessResult * result, int time)
     unsigned long area = 0; // an accumulator for the enrolled area in pixels
 
     if (faces_vector.size() != 0) { // if classifier has found something, then do...
-
-        unsigned char *p; // this pointer will be used to store adresses of the image rows
+		
+		cv::Mat face(output, faces_vector[0]);
+        cv::blur(face, face, cv::Size(11, 11)); // face and output share same data, so processing face affects output
+        
+		unsigned char *p; // this pointer will be used to store adresses of the image rows
         unsigned char tRed, tBlue, tGreen;
         unsigned int X = faces_vector[0].x; // take actual coordinate
         unsigned int Y = faces_vector[0].y; // take actual coordinate
@@ -221,9 +218,7 @@ HardThread::doOpencvPart(const cv::Mat & mat, ProcessResult * result, int time)
         auto dY = rectheight / 13; //...
 
         if (output.channels() == 3) {
-            for (auto j = Y - dY; j < Y + rectheight + dY; j++) {
-                if (static_cast<int>(j) > output.rows)
-                    break;
+            for (unsigned int j = Y - dY; j < Y + rectheight; j++) {
                 p = output.ptr(j); //takes pointer to beginning of data on row
                 for (auto i = X; i < X + rectwidth; i++) {
                     tRed = p[3 * i + 2];
@@ -238,9 +233,9 @@ HardThread::doOpencvPart(const cv::Mat & mat, ProcessResult * result, int time)
                 }
             }
         } else {
-            for (auto j = (Y + dY); j < (Y + 3 * dY); j++) {
+            for (unsigned int j = Y - dY; j < Y + rectheight; j++) {
                 p = output.ptr(j); //pointer to beginning of data on rows
-                for (auto i = (X + dX); i < (X + rectwidth - dX); i++) {
+                for (auto i = X; i < X + rectwidth; i++) {
                     green += p[i];
                 }
             }
@@ -255,48 +250,55 @@ HardThread::doOpencvPart(const cv::Mat & mat, ProcessResult * result, int time)
     result->iPeriod = m_framePeriod;
     m_watchDog -= time;
 
-    if (area > 0) {
-        if (RGB_flag == true) {
-            return doRGBHarmonic(red, green, blue, area, m_framePeriod, result);
-        }
-        switch (m_channel){
+    if (area > 10000) {
+        switch (m_channel) {
         case Red:
             return doOneColorHarmonic(red, area, m_framePeriod, result);
         case Green:
             return doOneColorHarmonic(green, area, m_framePeriod, result);
         case Blue:
             return doOneColorHarmonic(blue, area, m_framePeriod, result);
+		case RGB:
+			return doRGBHarmonic(red, green, blue, area, m_framePeriod, result);
         }
-    }
-    result->qValue1 = -1.0; // will signal that classifier has not found any objects
-    result->qValue2 = -1.0; // will signal that classifier has not found any objects
-    return false;
+    } else {
+		result->qValue1 = -1.0; // will signal that classifier has not found any objects
+		result->qValue2 = -1.0; // will signal that classifier has not found any objects
+		return false;
+	}
 }
 
 bool
 HardThread::doRGBHarmonic(unsigned long red, unsigned long green, unsigned long blue, unsigned long area, int time, ProcessResult * result)
 {
-    auto ch1_temp = static_cast<double>(red - green) / area;
-    auto ch2_temp = static_cast<double>(red + green - 2 * blue) / area;
-
-    ch1_mean += (ch1_temp - ptData_ch1[curpos]) / datalength;
-    ch2_mean += (ch2_temp - ptData_ch2[curpos]) / datalength;
-
-    ptData_ch1[curpos] = ch1_temp;
-    ptData_ch2[curpos] = ch2_temp;
+    ptData_ch1[curpos] = static_cast<double>(red - green) / area;
+    ptData_ch2[curpos] = static_cast<double>(red + green - 2 * blue) / area;
     ptTime[curpos] = time;
+
+	auto ch1_mean = 0.0;
+    auto ch2_mean = 0.0;
+    short pos;
+    for(short i = 0; i < m_averageInterval; i++)
+    {
+        pos = loop(curpos - i);
+        ch1_mean += ptData_ch1[pos];
+        ch2_mean += ptData_ch2[pos];
+    }
+    ch1_mean /= m_averageInterval;
+    ch2_mean /= m_averageInterval;
 
     auto ch1_sko = 0.0;
     auto ch2_sko = 0.0;
-    for (short i = 0; i < datalength; i++) {
-        ch1_sko += (ptData_ch1[i] - ch1_mean)*(ptData_ch1[i] - ch1_mean);
-        ch2_sko += (ptData_ch2[i] - ch2_mean)*(ptData_ch2[i] - ch2_mean);
+    for (short i = 0; i < m_averageInterval; i++) {
+        pos = loop(curpos - i);
+        ch1_sko += (ptData_ch1[pos] - ch1_mean)*(ptData_ch1[pos] - ch1_mean);
+        ch2_sko += (ptData_ch2[pos] - ch2_mean)*(ptData_ch2[pos] - ch2_mean);
     }
-    ch1_sko = sqrt(ch1_sko / (datalength - 1));
-    ch2_sko = sqrt(ch2_sko / (datalength - 1));
+    ch1_sko = sqrt(ch1_sko / (m_averageInterval - 1));
+    ch2_sko = sqrt(ch2_sko / (m_averageInterval - 1));
 
     ptX[loop_for_ptX(curpos)] = (ptData_ch1[curpos] - ch1_mean) / ch1_sko - (ptData_ch2[curpos] - ch2_mean) / ch2_sko;
-    ptCNSignal[curpos] = (ptX[loop_for_ptX(curpos)] + ptCNSignal[loop(curpos - 1)]) / 2;
+    ptCNSignal[curpos] = (ptX[loop_for_ptX(curpos)] + ptX[loop_for_ptX(curpos - 1)] + ptX[loop_for_ptX(curpos - 2)] + ptCNSignal[loop(curpos - 1)]) / 4.0;
 
     curpos = (++curpos) % datalength; // for loop-like usage of ptData and the other arrays in this class
     return doCompute(result);
@@ -305,21 +307,26 @@ HardThread::doRGBHarmonic(unsigned long red, unsigned long green, unsigned long 
 bool
 HardThread::doOneColorHarmonic(unsigned long color, unsigned long area, int time, ProcessResult * result)
 {
-    auto ch1_temp = static_cast<double>(color) / area;
-
-    ch1_mean += (ch1_temp - ptData_ch1[curpos]) / datalength;
-
-    ptData_ch1[curpos] = ch1_temp;
+    ptData_ch1[curpos] = static_cast<double>(color) / area;
     ptTime[curpos] = time;
+	
+	auto ch1_mean = 0.0;
+    for(short i = 0; i < m_averageInterval; i++)
+    {
+        ch1_mean += ptData_ch1[loop(curpos - i)];
+    }
+    ch1_mean /= m_averageInterval;
 
     auto ch1_sko = 0.0;
-    for (short i = 0; i < datalength; i++) {
-        ch1_sko += (ptData_ch1[i] - ch1_mean) * (ptData_ch1[i] - ch1_mean);
+    short pos;
+    for (short i = 0; i < m_averageInterval; i++) {
+        pos = loop(curpos - i);
+        ch1_sko += (ptData_ch1[pos] - ch1_mean) * (ptData_ch1[pos] - ch1_mean);
     }
-    ch1_sko = sqrt(ch1_sko / (datalength - 1));
+    ch1_sko = sqrt(ch1_sko / (m_averageInterval - 1));
 
     ptX[loop_for_ptX(curpos)] = (ptData_ch1[curpos] - ch1_mean) / ch1_sko;
-    ptCNSignal[curpos] = (ptX[loop_for_ptX(curpos)] + ptCNSignal[loop(curpos - 1)]) / 2;
+    ptCNSignal[curpos] = (ptX[loop_for_ptX(curpos)] + ptX[loop_for_ptX(curpos - 1)] + ptX[loop_for_ptX(curpos - 2)]  + ptCNSignal[loop(curpos - 1)]) / 4.0;
 
     curpos = (++curpos) % datalength; // for loop-like usage of ptData and the other arrays in this class    
     return doCompute(result);
@@ -356,27 +363,21 @@ HardThread::doCompute(ProcessResult * result)
                 index_of_maxpower = i;
             }
         }
-        /*-------------------------SNR estimation evaluation-----------------------*/
-        auto noise_power = 0.0;
+        /*-------------------------SNR estimation evaluation-----------------------*/      
+		auto noise_power = 0.0;
         auto signal_power = 0.0;
+        auto power_multiplyed_by_index = 0.0;
         for (auto i = bottom_bound; i < top_bound; i++) {
-            if ((i >= (index_of_maxpower - HALF_INTERVAL)) && (i <= (index_of_maxpower + HALF_INTERVAL)))    {
+            if ( (i >= (index_of_maxpower - HALF_INTERVAL )) && (i <= (index_of_maxpower + HALF_INTERVAL)) ) {
                 signal_power += ptAmplitudeSpectrum[i];
+                power_multiplyed_by_index += i * ptAmplitudeSpectrum[i];
             } else  {
                 noise_power += ptAmplitudeSpectrum[i];
             }
         }
-        SNRE = 10 * log10(signal_power / noise_power);
-        auto power = 0.0;
-        auto power_multiplyed_by_index = 0.0;
-        for (short i = (index_of_maxpower - HALF_INTERVAL + 1); i <= (index_of_maxpower + HALF_INTERVAL); i++) {
-            power += ptAmplitudeSpectrum[i];
-            power_multiplyed_by_index += i * ptAmplitudeSpectrum[i];
-        }
-        auto bias = static_cast<double>(index_of_maxpower) - (power_multiplyed_by_index / power);
-        bias = sqrt(bias * bias);
-        auto weight = (HALF_INTERVAL + 1 - bias) / (HALF_INTERVAL + 1);
-        SNRE *= weight  * weight * weight * weight; // four multiplication in a row for "more" nonlinearity
+        SNRE = 10 * log10( signal_power / noise_power );
+        auto bias = static_cast<double>index_of_maxpower - (power_multiplyed_by_index / signal_power);
+        SNRE *= (1 / (1 + bias*bias));		
 
         if (SNRE > SNR_TRESHOLD) {
             HRfrequency = (power_multiplyed_by_index / power) * 60000.0 / buffer_duration; // result will be expressed in minutes
@@ -393,9 +394,9 @@ bool inline
 HardThread::isSkinColor(unsigned char red, unsigned char green, unsigned char blue)
 {
     //Modified Kovac's rule
-    if ((red > 115) &&
+    if ((red > 90) &&
         (red > green) && (blue > 45) &&
-        ((red - std::min(green, blue)) > 35) && // for the std::min() you have to provide #include <algorithm>, whitch contains in std library since C++98
+        ((red - std::min(green, blue)) > 35) &&
         ((red - green) > 25)) {
         return true;
     }
