@@ -29,6 +29,7 @@ private slots:
     void updateStatus(int value);
     void makeConnections();
     void callFileSelectDialog();
+    void callDeviceSelectDialog();
     void about();
     void help();
 
@@ -36,6 +37,7 @@ private:
     Ui::MainWindow *ui;
 
     QAction *pt_fileAct;
+    QAction *pt_deviceAct;
     QAction *pt_pauseAct;
     QAction *pt_resumeAct;
     QAction *pt_forwardAct;

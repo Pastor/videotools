@@ -20,7 +20,7 @@ void QStasm::search_single(const cv::Mat &image)
                      temp.rows,
                      "",
                      0,
-                     25);
+                     15);
     int facesFound = 0;
 
     if( stasm_search_auto(&facesFound, pt_landmarks)) {

@@ -31,6 +31,8 @@ HEADERS  += mainwindow.h \
 
 FORMS    += mainwindow.ui
 
+CONFIG(release, debug|release): DEFINES += QT_NO_WARNING_OUTPUT
+
 include(opencv.pri)
 include(opengl.pri)
 include(stasm.pri)

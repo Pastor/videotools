@@ -66,12 +66,17 @@ void MainWindow::createActions()
     pt_numAct->setCheckable(true);
     pt_numAct->setChecked(true);
     connect(pt_numAct, SIGNAL(triggered(bool)), ui->display, SLOT(setNumbersVisualization(bool)));
+
+    pt_deviceAct = new QAction(tr("&Device"),this);
+    pt_deviceAct->setStatusTip(tr("Open video device"));
+    connect(pt_deviceAct, SIGNAL(triggered()), this, SLOT(callDeviceSelectDialog()));
 }
 
 void MainWindow::createMenus()
 {
     pt_sourceMenu = menuBar()->addMenu(tr("&Source"));
     pt_sourceMenu->addAction(pt_fileAct);
+    pt_sourceMenu->addAction(pt_deviceAct);
 
     pt_optionsMenu = menuBar()->addMenu(tr("&Options"));
     pt_optionsMenu->addAction(pt_numAct);
@@ -184,4 +189,11 @@ void MainWindow::help()
         QMessageBox msgBox(QMessageBox::Information, this->windowTitle(), tr("Can not find help"), QMessageBox::Ok, this, Qt::Dialog);
         msgBox.exec();
     }
+}
+
+void MainWindow::callDeviceSelectDialog()
+{
+    pt_videocapture->open_deviceSelectDialog();
+    if( pt_videocapture->opendevice() )
+        QTimer::singleShot(250, pt_videocapture, SLOT(resume()));
 }

@@ -70,7 +70,7 @@ void QImageWidget::paintEvent(QPaintEvent* )
     painter.fillRect(rect(), QColor(10,10,10));
     painter.drawImage(m_viewRect, m_qimage);
     painter.setRenderHint(QPainter::Antialiasing);
-    //drawString(painter, m_viewRect);
+    drawString(painter, m_viewRect);
     //drawSelection(painter);
     drawPoints(painter);
 }
@@ -113,15 +113,14 @@ void QImageWidget::drawString(QPainter &painter, const QRect &input_rect)
 {
     QPainterPath path;
 
-    QFont font("Calibry", (qreal)input_rect.height()/26, QFont::Bold);
+    QFont font("Tahoma", (qreal)m_viewRect.height()/48, QFont::Bold);
     QPen pen(Qt::NoBrush, 1.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-    pen.setColor(QColor(0,0,0));
+    pen.setColor(Qt::black);
     painter.setPen( pen );
-    painter.setBrush(Qt::green);
+    painter.setBrush(Qt::white);
 
-    path.addText(input_rect.x(), input_rect.y() + font.pointSize(), font, m_string);
+    path.addText(m_viewRect.x() + 10, m_viewRect.y() + 10 + font.pointSize(), font, m_string);
     painter.drawPath(path);
-    painter.setBrush(Qt::NoBrush);
 }
 //--------------------------------------------------------------------------------------
 void QImageWidget::updateViewRect()
@@ -173,21 +172,26 @@ void QImageWidget::drawPoints(QPainter &painter)
 {
     if(v_points != NULL && m_points > 0) {
 
-        qreal radius = std::log((double)m_viewRect.height())/std::log(6.0);
+        qreal radius = std::log((double)m_viewRect.height())/std::log(5.0);
         QPainterPath path;
-        path.setFillRule(Qt::WindingFill);
+        //path.setFillRule(Qt::WindingFill);
         QFont font("Tahoma");
-        font.setPointSizeF(radius*4.0);
+        font.setPointSizeF(radius*1.5);
         painter.setBrush(QColor(255,255,255));
 
         QPointF c;
-        QPointF shift(1.1*radius, 1.1*radius);
+        qreal size = font.pointSizeF();
+        QPointF shift(size/2.6, -size/2.0);
         for(uint i = 0; i < m_points/2; i++) {
+            if(i == 10)
+                shift += QPointF(size/2.6, 0.0);
             c.setX( (v_points[i*2]/m_cvMat.cols) * m_viewRect.width() + m_viewRect.x() );
             c.setY( (v_points[i*2+1]/m_cvMat.rows) * m_viewRect.height() + m_viewRect.y() );
-            path.addEllipse(c, radius, radius);
-            if(f_numbers)
+            if(f_numbers) {
+                path.addEllipse(c, size, size);
                 path.addText(c - shift, font, QString::number(i));
+            } else
+                path.addEllipse(c, radius, radius);
         }
         painter.drawPath(path);
     }
