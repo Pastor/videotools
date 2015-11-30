@@ -35,7 +35,10 @@ win32 {
     #Specify names of *.lib files
     LIBS += -l$$qtLibraryName(opencv_core$${OPENCV_VERSION}) \
             -l$$qtLibraryName(opencv_highgui$${OPENCV_VERSION}) \
-            -l$$qtLibraryName(opencv_imgproc$${OPENCV_VERSION})
+            -l$$qtLibraryName(opencv_imgproc$${OPENCV_VERSION}) \
+            -l$$qtLibraryName(opencv_objdetect$${OPENCV_VERSION})
 
+
+    DEFINES += REPLACE_TO_OPENCVHPP=1
     message(OpenCV library version $${OPENCV_DIR}/$${OPENCV_ARCHITECTURE_DIR}/$${OPENCV_COMPILER_DIR} will be used)
 }

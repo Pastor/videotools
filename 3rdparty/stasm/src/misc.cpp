@@ -4,8 +4,12 @@
 
 #include "stasm.h"
 #include <sys/stat.h>
+#ifndef REPLACE_TO_OPENCVHPP
 #include <opencv2/imgproc.hpp>
 #include <opencv2/objdetect.hpp>
+#else
+#include <opencv2/opencv.hpp>
+#endif
 
 namespace stasm
 {

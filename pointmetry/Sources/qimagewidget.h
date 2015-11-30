@@ -8,7 +8,7 @@ QImage instance from cv::Mat image. The QImageWidget should be used as widget fo
 #ifndef QIMAGEWIDGET_H
 #define QIMAGEWIDGET_H
 //------------------------------------------------------------------------------------------------------
-#ifdef USE_OPENGL_WIDGETS
+#ifdef OPENGL_WIDGETS
     #include <QOpenGLWidget>
     #include <QSurfaceFormat>
 #else
@@ -34,6 +34,9 @@ signals:
     void selectionUpdated(const cv::Rect &value);
 public slots:
     void updateImage(const cv::Mat &image); // takes cv::Mat image and converts it to the appropriate Qt QImage format
+    void updateImage(const cv::Mat &image, float *pointer, uint length);
+    void setNumbersVisualization(bool value);
+
 private:
     QImage m_qimage;        // stores current QImage instance
     cv::Mat m_cvMat;        // stores current cv::Mat instance
@@ -45,12 +48,17 @@ private:
     QRect m_viewRect;       // a rect inside widget's rect with image proportion of dimensions
     QRect m_selectRect;  // a rect that stores user's last selection on m_viewRect
     cv::Rect m_Rect;        // a rect that stores coordinates of selected region on m_cvMat
+    float *v_points;
+    uint  m_points;
 
     void updateViewRect();  // calculates m_viewRect by means of m_cvMat dimensions proportion
     void updateSelectRect(); //recalculate coordiantes of m_selectRect after widget rescale
 
     void drawString(QPainter &painter, const QRect &input_rect);
     void drawSelection(QPainter &painter);
+    void drawPoints(QPainter &painter);
+
+    bool f_numbers;
 
 protected:
     void paintEvent(QPaintEvent *);

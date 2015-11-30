@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include <QDesktopServices>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -10,12 +11,17 @@ MainWindow::MainWindow(QWidget *parent) :
     createActions();
     createMenus();
     makeConnections();
+
+    setWindowTitle(QString(APP_NAME));
+    showMaximized();
 }
 
 MainWindow::~MainWindow()
 {
     pt_videoThread->exit();
         pt_videoThread->wait();
+    pt_stasmThread->exit();
+        pt_stasmThread->wait();
     delete ui;
 }
 
@@ -46,12 +52,33 @@ void MainWindow::createActions()
     pt_speeddownAct = new QAction(tr("Speedx0.5"), this);
     pt_speeddownAct->setStatusTip("Decrease speed of playback by two times");
     connect(pt_speeddownAct, SIGNAL(triggered(bool)), pt_videocapture, SLOT(speedDown()));
+
+    pt_aboutAct = new QAction(tr("&About"), this);
+    pt_aboutAct->setStatusTip("Show about");
+    connect(pt_aboutAct, SIGNAL(triggered()), this, SLOT(about()));
+
+    pt_helpAct = new QAction(tr("&Help"), this);
+    pt_helpAct->setStatusTip("Show help");
+    connect(pt_helpAct, SIGNAL(triggered()), this, SLOT(help()));
+
+    pt_numAct = new QAction(tr("&Numbers"), this);
+    pt_numAct->setStatusTip("Toogle show numbers");
+    pt_numAct->setCheckable(true);
+    pt_numAct->setChecked(true);
+    connect(pt_numAct, SIGNAL(triggered(bool)), ui->display, SLOT(setNumbersVisualization(bool)));
 }
 
 void MainWindow::createMenus()
 {
-    pt_sourceMenu = this->menuBar()->addMenu(tr("Source"));
+    pt_sourceMenu = menuBar()->addMenu(tr("&Source"));
     pt_sourceMenu->addAction(pt_fileAct);
+
+    pt_optionsMenu = menuBar()->addMenu(tr("&Options"));
+    pt_optionsMenu->addAction(pt_numAct);
+
+    pt_helpMenu = menuBar()->addMenu(tr("&Help"));
+    pt_helpMenu->addAction(pt_aboutAct);
+    pt_helpMenu->addAction(pt_helpAct);
 }
 
 void MainWindow::createThreads()
@@ -62,12 +89,17 @@ void MainWindow::createThreads()
     connect(pt_videoThread, SIGNAL(started()), pt_videocapture, SLOT(initializeTimer()));
     connect(pt_videoThread, SIGNAL(finished()), pt_videocapture, SLOT(deleteLater()));
 
-
+    pt_stasmThread = new QThread(this);
+    pt_stasm = new QStasm();
+    pt_stasm->moveToThread(pt_stasmThread);
+    connect(pt_stasmThread, SIGNAL(finished()), pt_stasm, SLOT(deleteLater()));
 
     qRegisterMetaType<cv::Mat>("cv::Mat");
-    connect(pt_videocapture,SIGNAL(frameUpdated(cv::Mat)), ui->display, SLOT(updateImage(cv::Mat)));
+    connect(pt_videocapture,SIGNAL(frameUpdated(cv::Mat)), pt_stasm, SLOT(search_single(cv::Mat)), Qt::BlockingQueuedConnection);
+    connect(pt_stasm, SIGNAL(landmarksUpdated(cv::Mat,float*,uint)), ui->display, SLOT(updateImage(cv::Mat,float*,uint)));
 
-    pt_videoThread->start();
+    pt_videoThread->start(QThread::LowPriority);
+    pt_stasmThread->start(QThread::HighPriority);
 }
 
 void MainWindow::makeConnections()
@@ -88,7 +120,7 @@ void MainWindow::makeConnections()
     connect(pt_videocapture, SIGNAL(positionUpdated(int)), ui->frameLCD, SLOT(display(int)));
     connect(pt_videocapture, SIGNAL(framesInFile(int)), ui->totalframesLCD, SLOT(display(int)));
 
-
+    connect(pt_stasm, SIGNAL(frametimeUpdated(double)), ui->frametimeLCD, SLOT(display(double)));
 }
 
 void MainWindow::updateStatus(const QString &str)
@@ -109,4 +141,47 @@ void MainWindow::callFileSelectDialog()
         msg.exec();
     } else
         pt_resumeAct->trigger();
+}
+
+void MainWindow::about()
+{
+   QDialog *aboutdialog = new QDialog();
+   int pSize = aboutdialog->font().pointSize();
+   aboutdialog->setWindowTitle("About");
+   aboutdialog->setFixedSize(pSize*27,pSize*17);
+
+   QVBoxLayout *templayout = new QVBoxLayout();
+   templayout->setMargin(5);
+
+   QLabel *projectname = new QLabel(QString(APP_NAME) +"\t"+ QString(APP_VERSION));
+   projectname->setFrameStyle(QFrame::Box | QFrame::Raised);
+   projectname->setAlignment(Qt::AlignCenter);
+   QLabel *projectauthors = new QLabel(QString(APP_DESIGNER) + "\n\nBMSTU\n\nNovember of 2015");
+   projectauthors->setWordWrap(true);
+   projectauthors->setAlignment(Qt::AlignCenter);
+   QLabel *hyperlink = new QLabel("<a href='mailto:biometric-doc@yandex.ru?subject=Pointmetry'>Contact us at biometric-doc@yandex.ru");
+   hyperlink->setOpenExternalLinks(true);
+   hyperlink->setAlignment(Qt::AlignCenter);
+
+   templayout->addWidget(projectname);
+   templayout->addWidget(projectauthors);
+   templayout->addWidget(hyperlink);
+
+   aboutdialog->setLayout(templayout);
+   aboutdialog->exec();
+
+   delete hyperlink;
+   delete projectauthors;
+   delete projectname;
+   delete templayout;
+   delete aboutdialog;
+}
+
+void MainWindow::help()
+{
+    if (!QDesktopServices::openUrl(QUrl(QString("http://biometric.bmstu.ru/category/kontakti"), QUrl::TolerantMode))) // runs the ShellExecute function on Windows
+    {
+        QMessageBox msgBox(QMessageBox::Information, this->windowTitle(), tr("Can not find help"), QMessageBox::Ok, this, Qt::Dialog);
+        msgBox.exec();
+    }
 }

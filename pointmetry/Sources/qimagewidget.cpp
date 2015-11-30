@@ -6,6 +6,7 @@ QImage instance from cv::Mat image. The QImageWidget should be used as widget fo
  * ------------------------------------------------------------------------------------------*/
 
 #include "qimagewidget.h"
+#include <QPainterPath>
 
 //-----------------------------------------------------------------------------------
 QImageWidget::QImageWidget(QWidget *parent): WIDGET_CLASS(parent)
@@ -18,6 +19,8 @@ QImageWidget::QImageWidget(QWidget *parent): WIDGET_CLASS(parent)
         this->setFormat(format);
         qWarning("QOpenGLWidget manual samples: %d", this->format().samples());
     #endif
+    f_numbers = true;
+    m_points = 0;
     f_select = true;
 }
 //-----------------------------------------------------------------------------------
@@ -38,15 +41,38 @@ void QImageWidget::updateImage(const cv::Mat& image)
     m_qimage = QImage(m_cvMat.data, m_cvMat.cols, m_cvMat.rows, m_cvMat.cols * 3, QImage::Format_RGB888);  // Assign OpenCV's image buffer to the QImage
     update();
 }
+//-----------------------------------------------------------------------------------
+void QImageWidget::updateImage(const cv::Mat& image, float *pointer, uint length)
+{
+    v_points = pointer;
+    m_points = length;
+
+    m_string = QString::number(image.cols) + "x" + QString::number(image.rows);
+
+    switch ( image.type() )
+    {
+        case CV_8UC1:
+            cv::cvtColor(image, m_cvMat, CV_GRAY2RGB);
+            break;
+        case CV_8UC3:
+            cv::cvtColor(image, m_cvMat, CV_BGR2RGB);
+            break;
+    }
+    assert(m_cvMat.isContinuous()); // QImage needs the data to be stored continuously in memory
+    m_qimage = QImage(m_cvMat.data, m_cvMat.cols, m_cvMat.rows, m_cvMat.cols * 3, QImage::Format_RGB888);  // Assign OpenCV's image buffer to the QImage
+    update();
+}
 //------------------------------------------------------------------------------------
 void QImageWidget::paintEvent(QPaintEvent* )
 {
     updateViewRect();
     QPainter painter( this );
+    painter.fillRect(rect(), QColor(10,10,10));
     painter.drawImage(m_viewRect, m_qimage);
     painter.setRenderHint(QPainter::Antialiasing);
     //drawString(painter, m_viewRect);
-    drawSelection(painter);
+    //drawSelection(painter);
+    drawPoints(painter);
 }
 //------------------------------------------------------------------------------------
 void QImageWidget::mousePressEvent(QMouseEvent *event)
@@ -143,5 +169,32 @@ void QImageWidget::drawSelection(QPainter &painter)
     }
 }
 //--------------------------------------------------------------------------------------
+void QImageWidget::drawPoints(QPainter &painter)
+{
+    if(v_points != NULL && m_points > 0) {
 
+        qreal radius = std::log((double)m_viewRect.height())/std::log(6.0);
+        QPainterPath path;
+        path.setFillRule(Qt::WindingFill);
+        QFont font("Tahoma");
+        font.setPointSizeF(radius*4.0);
+        painter.setBrush(QColor(255,255,255));
+
+        QPointF c;
+        QPointF shift(1.1*radius, 1.1*radius);
+        for(uint i = 0; i < m_points/2; i++) {
+            c.setX( (v_points[i*2]/m_cvMat.cols) * m_viewRect.width() + m_viewRect.x() );
+            c.setY( (v_points[i*2+1]/m_cvMat.rows) * m_viewRect.height() + m_viewRect.y() );
+            path.addEllipse(c, radius, radius);
+            if(f_numbers)
+                path.addText(c - shift, font, QString::number(i));
+        }
+        painter.drawPath(path);
+    }
+}
+//--------------------------------------------------------------------------------------
+void QImageWidget::setNumbersVisualization(bool value)
+{
+    f_numbers = value;
+}
 

@@ -10,6 +10,7 @@
 
 #include "qimagewidget.h"
 #include "qvideocapture.h"
+#include "qstasm.h"
 
 namespace Ui {
 class MainWindow;
@@ -28,12 +29,12 @@ private slots:
     void updateStatus(int value);
     void makeConnections();
     void callFileSelectDialog();
+    void about();
+    void help();
 
 private:
     Ui::MainWindow *ui;
 
-    QAction *pt_aboutAct;
-    QAction *pt_helpAct;
     QAction *pt_fileAct;
     QAction *pt_pauseAct;
     QAction *pt_resumeAct;
@@ -41,12 +42,18 @@ private:
     QAction *pt_backwardAct;
     QAction *pt_speedupAct;
     QAction *pt_speeddownAct;
+    QAction *pt_aboutAct;
+    QAction *pt_helpAct;
+    QAction *pt_numAct;
 
     QMenu *pt_sourceMenu;
+    QMenu *pt_optionsMenu;
     QMenu *pt_helpMenu;
 
     QThread *pt_videoThread;
+    QThread *pt_stasmThread;
     QVideoCapture *pt_videocapture;
+    QStasm *pt_stasm;
 
     void createActions();
     void createMenus();

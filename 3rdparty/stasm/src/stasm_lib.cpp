@@ -3,9 +3,12 @@
 // Copyright (C) 2005-2013, Stephen Milborrow
 
 #include "stasm.h"
+#ifndef REPLACE_TO_OPENCVHPP
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
-
+#else
+#include <opencv2/opencv.hpp>
+#endif
 using namespace stasm;
 
 const char* const stasm_VERSION = STASM_VERSION;
