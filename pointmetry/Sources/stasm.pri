@@ -1,6 +1,6 @@
 STASM_PATH = c:/Programming/Videotools/3rdparty/stasm/src
 
-DEFINES += DIRECTORY_OF_FACE_DETECTOR_FILES=\\\"$${STASM_PATH}/..\\\"
+#DEFINES += DIRECTORY_OF_FACE_DETECTOR_FILES=\\\"$${STASM_PATH}/..\\\"
 
 INCLUDEPATH += $${STASM_PATH} \
                $${STASM_PATH}/..

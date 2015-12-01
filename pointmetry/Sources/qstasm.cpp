@@ -3,7 +3,11 @@
 QStasm::QStasm(QObject *parent) :
     QObject(parent)
 {
+    #ifdef DIRECTORY_OF_FACE_DETECTOR_FILES
     stasm_init( QString(DIRECTORY_OF_FACE_DETECTOR_FILES).toUtf8().data() , 0);
+    #else
+    stasm_init( "stasm/" , 0);
+    #endif
 }
 
 void QStasm::search_single(const cv::Mat &image)

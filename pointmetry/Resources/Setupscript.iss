@@ -4,11 +4,12 @@
 #define MyAppName "Pointmetry"
 #define MyAppVersion "1.0.0.0"
 #define MyAppPublisher "NIICBT"
-#define MyAppURL "http://biometric.bmstu.ru/"
+#define MyAppURL "http://biometric.bmstu.ru"
 #define MyAppExeName "Pointmetry.exe"
 
 #define OpencvBinPath "C:\opencv248\build\x86\vc10\bin"
 #define QtBinPath "C:\Qt\5.4\msvc2010_opengl\bin"
+#define stasmPath "C:\Programming\videotools\3rdparty\stasm"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
@@ -35,7 +36,6 @@ Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked; OnlyBelowVersion: 0,6.1
 
 [Files]
 Source: "C:\Programming\videotools\pointmetry\Install\build-Sources-Desktop_Qt_5_4_MSVC2010_OpenGL_32bit-Release\release\Pointmetry.exe"; DestDir: "{app}"; Flags: ignoreversion
@@ -63,6 +63,9 @@ Source: "{#QtBinPath}\..\plugins\platforms\qwindows.dll"; DestDir: "{app}\platfo
 Source: "{#QtBinPath}\..\plugins\mediaservice\dsengine.dll"; DestDir: "{app}\mediaservice"; Flags: ignoreversion
 Source: "{#QtBinPath}\..\plugins\mediaservice\qtmedia_audioengine.dll"; DestDir: "{app}\mediaservice"; Flags: ignoreversion
 Source: "{#QtBinPath}\..\plugins\mediaservice\wmfengine.dll"; DestDir: "{app}\mediaservice"; Flags: ignoreversion
+
+Source: "{#stasmPath}\haarcascade_frontalface_alt2.xml"; DestDir: "{app}\stasm"; Flags: ignoreversion
+Source: "{#stasmPath}\src\MOD_1\mh\*"; DestDir: "{app}\stasm\src\MOD_1\mh"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
@@ -70,7 +73,6 @@ Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{group}\{cm:ProgramOnTheWeb,{#MyAppName}}"; Filename: "{#MyAppURL}"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
-Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: quicklaunchicon
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
