@@ -54,7 +54,7 @@ private:
     void updateViewRect();  // calculates m_viewRect by means of m_cvMat dimensions proportion
     void updateSelectRect(); //recalculate coordiantes of m_selectRect after widget rescale
 
-    void drawString(QPainter &painter, const QRect &input_rect);
+    void drawString(QPainter &painter);
     void drawSelection(QPainter &painter);
     void drawPoints(QPainter &painter);
 

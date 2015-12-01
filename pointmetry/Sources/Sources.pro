@@ -21,16 +21,21 @@ SOURCES +=  main.cpp\
             qimagewidget.cpp \
             qvideocapture.cpp \
             qvideoslider.cpp \
-    qstasm.cpp
+            qstasm.cpp \
+            qeasyplot.cpp \
+            qopencvprocessor.cpp
 
 HEADERS  += mainwindow.h \
             qimagewidget.h \
             qvideocapture.h \
             qvideoslider.h \
-    qstasm.h
+            qstasm.h \
+            qeasyplot.h \
+            qopencvprocessor.h
 
 FORMS    += mainwindow.ui
 
+RC_ICONS + =
 CONFIG(release, debug|release): DEFINES += QT_NO_WARNING_OUTPUT
 
 include(opencv.pri)

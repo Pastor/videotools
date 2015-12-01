@@ -11,6 +11,8 @@
 #include "qimagewidget.h"
 #include "qvideocapture.h"
 #include "qstasm.h"
+#include "qeasyplot.h"
+#include "qopencvprocessor.h"
 
 namespace Ui {
 class MainWindow;
@@ -32,6 +34,7 @@ private slots:
     void callDeviceSelectDialog();
     void about();
     void help();
+    void addPlot();
 
 private:
     Ui::MainWindow *ui;
@@ -47,6 +50,7 @@ private:
     QAction *pt_aboutAct;
     QAction *pt_helpAct;
     QAction *pt_numAct;
+    QAction *pt_plotAct;
 
     QMenu *pt_sourceMenu;
     QMenu *pt_optionsMenu;
@@ -54,12 +58,18 @@ private:
 
     QThread *pt_videoThread;
     QThread *pt_stasmThread;
+    QThread *pt_opencvThread;
     QVideoCapture *pt_videocapture;
     QStasm *pt_stasm;
+    QOpencvProcessor *pt_opencv;
+
+   std::vector<QEasyPlot*> v_plots;
 
     void createActions();
     void createMenus();
     void createThreads();
+protected:
+    void closeEvent(QCloseEvent *);
 };
 
 #endif // MAINWINDOW_H

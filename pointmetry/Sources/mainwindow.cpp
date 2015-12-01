@@ -22,6 +22,8 @@ MainWindow::~MainWindow()
         pt_videoThread->wait();
     pt_stasmThread->exit();
         pt_stasmThread->wait();
+    pt_opencvThread->exit();
+        pt_opencvThread->wait();
     delete ui;
 }
 
@@ -70,6 +72,10 @@ void MainWindow::createActions()
     pt_deviceAct = new QAction(tr("&Device"),this);
     pt_deviceAct->setStatusTip(tr("Open video device"));
     connect(pt_deviceAct, SIGNAL(triggered()), this, SLOT(callDeviceSelectDialog()));
+
+    pt_plotAct = new QAction(tr("&Plot"),this);
+    pt_plotAct->setStatusTip(tr("New plot"));
+    connect(pt_plotAct, SIGNAL(triggered()), this, SLOT(addPlot()));
 }
 
 void MainWindow::createMenus()
@@ -80,6 +86,7 @@ void MainWindow::createMenus()
 
     pt_optionsMenu = menuBar()->addMenu(tr("&Options"));
     pt_optionsMenu->addAction(pt_numAct);
+    pt_optionsMenu->addAction(pt_plotAct);
 
     pt_helpMenu = menuBar()->addMenu(tr("&Help"));
     pt_helpMenu->addAction(pt_aboutAct);
@@ -99,12 +106,19 @@ void MainWindow::createThreads()
     pt_stasm->moveToThread(pt_stasmThread);
     connect(pt_stasmThread, SIGNAL(finished()), pt_stasm, SLOT(deleteLater()));
 
+    pt_opencvThread = new QThread(this);
+    pt_opencv = new QOpencvProcessor();
+    pt_opencv->moveToThread(pt_opencvThread);
+    connect(pt_opencvThread, SIGNAL(finished()), pt_opencv, SLOT(deleteLater()));
+
     qRegisterMetaType<cv::Mat>("cv::Mat");
+    connect(pt_videocapture, SIGNAL(frameUpdated(cv::Mat)), pt_opencv, SLOT(custom_algorithm(cv::Mat)));
     connect(pt_videocapture,SIGNAL(frameUpdated(cv::Mat)), pt_stasm, SLOT(search_single(cv::Mat)), Qt::BlockingQueuedConnection);
     connect(pt_stasm, SIGNAL(landmarksUpdated(cv::Mat,float*,uint)), ui->display, SLOT(updateImage(cv::Mat,float*,uint)));
 
     pt_videoThread->start(QThread::LowPriority);
-    pt_stasmThread->start(QThread::HighPriority);
+    pt_stasmThread->start();
+    pt_opencvThread->start();
 }
 
 void MainWindow::makeConnections()
@@ -126,6 +140,9 @@ void MainWindow::makeConnections()
     connect(pt_videocapture, SIGNAL(framesInFile(int)), ui->totalframesLCD, SLOT(display(int)));
 
     connect(pt_stasm, SIGNAL(frametimeUpdated(double)), ui->frametimeLCD, SLOT(display(double)));
+
+    connect(pt_opencv, SIGNAL(snrUpdated(double)), ui->snrLCD, SLOT(display(double)));
+    connect(pt_opencv, SIGNAL(contrastUpdated(double)), ui->contrastLCD, SLOT(display(double)));
 }
 
 void MainWindow::updateStatus(const QString &str)
@@ -196,4 +213,21 @@ void MainWindow::callDeviceSelectDialog()
     pt_videocapture->open_deviceSelectDialog();
     if( pt_videocapture->opendevice() )
         QTimer::singleShot(250, pt_videocapture, SLOT(resume()));
+}
+
+void MainWindow::addPlot()
+{
+    QEasyPlot *plot = new QEasyPlot();
+    plot->setWindowFlags(Qt::Window);
+    v_plots.push_back(plot);
+    plot->show();
+}
+
+void MainWindow::closeEvent(QCloseEvent*)
+{
+    QEasyPlot *temp;
+    for(uint i = 0; i < v_plots.size(); i++)    {
+        temp = v_plots[i];
+        temp->close();
+    }
 }

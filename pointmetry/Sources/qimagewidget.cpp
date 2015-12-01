@@ -70,9 +70,9 @@ void QImageWidget::paintEvent(QPaintEvent* )
     painter.fillRect(rect(), QColor(10,10,10));
     painter.drawImage(m_viewRect, m_qimage);
     painter.setRenderHint(QPainter::Antialiasing);
-    drawString(painter, m_viewRect);
-    //drawSelection(painter);
+    drawString(painter);
     drawPoints(painter);
+    drawSelection(painter);
 }
 //------------------------------------------------------------------------------------
 void QImageWidget::mousePressEvent(QMouseEvent *event)
@@ -109,17 +109,17 @@ void QImageWidget::mouseMoveEvent(QMouseEvent *event)
     emit selectionUpdated( m_Rect );
 }
 //------------------------------------------------------------------------------------
-void QImageWidget::drawString(QPainter &painter, const QRect &input_rect)
+void QImageWidget::drawString(QPainter &painter)
 {
     QPainterPath path;
 
-    QFont font("Tahoma", (qreal)m_viewRect.height()/48, QFont::Bold);
+    QFont font("Tahoma", std::log((double)rect().height())*2.5, QFont::Bold);
     QPen pen(Qt::NoBrush, 1.0, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
     pen.setColor(Qt::black);
     painter.setPen( pen );
     painter.setBrush(Qt::white);
 
-    path.addText(m_viewRect.x() + 10, m_viewRect.y() + 10 + font.pointSize(), font, m_string);
+    path.addText(rect().x() + 10, rect().y() + 10 + font.pointSize(), font, m_string);
     painter.drawPath(path);
 }
 //--------------------------------------------------------------------------------------
@@ -164,6 +164,7 @@ void QImageWidget::drawSelection(QPainter &painter)
         QPen pen(Qt::NoBrush, 1.0, Qt::DashLine, Qt::RoundCap, Qt::RoundJoin);
         pen.setColor(QColor(0,255,0));
         painter.setPen( pen );
+        painter.setBrush(Qt::NoBrush);
         painter.drawRect(m_selectRect);
     }
 }
