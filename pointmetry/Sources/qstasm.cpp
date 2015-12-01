@@ -20,13 +20,14 @@ void QStasm::search_single(const cv::Mat &image)
                      temp.rows,
                      "",
                      0,
-                     15);
+                     20);
     int facesFound = 0;
 
     if( stasm_search_auto(&facesFound, pt_landmarks)) {
         for(uint i = 0; i < 2 * stasm_NLANDMARKS; i++)
             pt_buffer[i] = pt_landmarks[i];
         emit landmarksUpdated(image, pt_buffer, 2 * stasm_NLANDMARKS);
+        emit eyesdistanceUpdated( std::sqrt((pt_buffer[2*38] - pt_buffer[2*39])*(pt_buffer[2*38] - pt_buffer[2*39]) + (pt_buffer[2*38+1] - pt_buffer[2*39+1])*(pt_buffer[2*38+1] - pt_buffer[2*39+1])) );
     } else emit facesEnds();
 
     m_frametime = (cv::getTickCount() -  m_time) * 1000.0 / cv::getTickFrequency(); // result is calculated in milliseconds

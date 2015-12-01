@@ -143,6 +143,7 @@ void MainWindow::makeConnections()
 
     connect(pt_opencv, SIGNAL(snrUpdated(double)), ui->snrLCD, SLOT(display(double)));
     connect(pt_opencv, SIGNAL(contrastUpdated(double)), ui->contrastLCD, SLOT(display(double)));
+    connect(pt_stasm, SIGNAL(eyesdistanceUpdated(double)), ui->eyesLCD, SLOT(display(double)));
 }
 
 void MainWindow::updateStatus(const QString &str)
@@ -212,7 +213,7 @@ void MainWindow::callDeviceSelectDialog()
 {
     pt_videocapture->open_deviceSelectDialog();
     if( pt_videocapture->opendevice() )
-        QTimer::singleShot(250, pt_videocapture, SLOT(resume()));
+        QTimer::singleShot(500, pt_videocapture, SLOT(resume()));
 }
 
 void MainWindow::addPlot()

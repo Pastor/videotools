@@ -480,7 +480,7 @@ int QVideoCapture::getFramesCount()
 
 void QVideoCapture::stepBackward()
 {
-    if(m_cvCapture.isOpened()) {
+    if(m_cvCapture.isOpened()) {   
         int pos = (int)m_cvCapture.get(CV_CAP_PROP_POS_FRAMES);
         if(pos > 0)
             if(setPosition(pos - 2))
@@ -491,9 +491,11 @@ void QVideoCapture::stepBackward()
 void QVideoCapture::stepForward()
 {
     if(m_cvCapture.isOpened()) {
-        int pos = (int)m_cvCapture.get(CV_CAP_PROP_POS_FRAMES);
-        if(pos < m_frames - 1)
-                read_frame();
+        if(!deviceFlag) {
+            int pos = (int)m_cvCapture.get(CV_CAP_PROP_POS_FRAMES);
+            if(pos < m_frames - 1)
+                    read_frame();
+        } else read_frame();
     }
 }
 

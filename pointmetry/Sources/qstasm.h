@@ -15,6 +15,7 @@ signals:
     void landmarksUpdated(const cv::Mat &img, float *pointer, uint length);
     void frametimeUpdated(double value);
     void facesEnds();
+    void eyesdistanceUpdated(double value);
 
 public slots:
    void search_single(const cv::Mat &image);
