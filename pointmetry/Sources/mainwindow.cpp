@@ -13,7 +13,7 @@ MainWindow::MainWindow(QWidget *parent) :
     makeConnections();
 
     setWindowTitle(QString(APP_NAME));
-    showMaximized();
+    //showMaximized();
 }
 
 MainWindow::~MainWindow()

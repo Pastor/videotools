@@ -35,9 +35,9 @@ HEADERS  += mainwindow.h \
 
 FORMS    += mainwindow.ui
 
-RC_ICONS = $${PWD}/../Resources/worker.ico
-CONFIG(release, debug|release): DEFINES += QT_NO_WARNING_OUTPUT
-
 include(opencv.pri)
 include(opengl.pri)
 include(stasm.pri)
+
+RC_ICONS = $${PWD}/../Resources/worker.ico
+#CONFIG(release, debug|release): DEFINES += QT_NO_WARNING_OUTPUT

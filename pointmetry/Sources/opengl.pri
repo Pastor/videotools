@@ -1,4 +1,4 @@
-#CONFIG += opengl
+CONFIG += opengl
 
 opengl {
 

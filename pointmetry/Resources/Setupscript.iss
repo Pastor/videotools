@@ -65,7 +65,6 @@ Source: "{#QtBinPath}\..\plugins\mediaservice\qtmedia_audioengine.dll"; DestDir:
 Source: "{#QtBinPath}\..\plugins\mediaservice\wmfengine.dll"; DestDir: "{app}\mediaservice"; Flags: ignoreversion
 
 Source: "{#stasmPath}\haarcascade_frontalface_alt2.xml"; DestDir: "{app}\stasm"; Flags: ignoreversion
-Source: "{#stasmPath}\src\MOD_1\mh\*"; DestDir: "{app}\stasm\src\MOD_1\mh"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]

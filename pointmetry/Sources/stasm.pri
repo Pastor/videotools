@@ -1,9 +1,7 @@
-STASM_PATH = c:/Programming/Videotools/3rdparty/stasm/src
-
-#DEFINES += DIRECTORY_OF_FACE_DETECTOR_FILES=\\\"$${STASM_PATH}/..\\\"
+STASM_PATH = C:/Programming/3rdParties/fastStasm/stasm
 
 INCLUDEPATH += $${STASM_PATH} \
-               $${STASM_PATH}/..
+               $${STASM_PATH}/MOD_1
 
 SOURCES +=  $$STASM_PATH/stasm_lib.cpp \
             $$STASM_PATH/asm.cpp \
@@ -28,3 +26,5 @@ SOURCES +=  $$STASM_PATH/stasm_lib.cpp \
 
 SOURCES +=  $$STASM_PATH/MOD_1/facedet.cpp \
             $$STASM_PATH/MOD_1/initasm.cpp
+
+DEFINES += DIRECTORY_OF_FACE_DETECTOR_FILES=\\\"$${OPENCV_DIR}/../sources/data/haarcascades\\\"

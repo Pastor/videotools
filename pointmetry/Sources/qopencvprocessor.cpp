@@ -112,7 +112,7 @@ qreal QOpencvProcessor::__calculateSharpness(const cv::Mat &input)
     cv::Scalar v_sharp = cv::sum(temp);
     qreal sharpness = std::sqrt((v_sharp[0]*v_sharp[0] + v_sharp[1]*v_sharp[1] + v_sharp[2]*v_sharp[2]))/(255.0*input.cols*input.rows);
     emit sharpnessUpdated(sharpness);
-    qWarning("Sharpness: %f\t, %f, %f, %f", sharpness , v_sharp[0], v_sharp[1], v_sharp[2]);
+    //qWarning("Sharpness: %f\t, %f, %f, %f", sharpness , v_sharp[0], v_sharp[1], v_sharp[2]);
     return sharpness;
 }
 
@@ -142,7 +142,7 @@ qreal QOpencvProcessor::__calculateContrast(const cv::Mat &input)
     }
     qreal Contrast = std::sqrt((skoBlue + skoGreen + skoRed) / area) / 255.0;
     emit contrastUpdated(Contrast);
-    qWarning("Contrast: %f", Contrast);
+    //qWarning("Contrast: %f", Contrast);
     return Contrast;
 }
 
@@ -153,7 +153,7 @@ qreal QOpencvProcessor::__calculateSNR(const cv::Mat &input)
     cv::Scalar v_stDev;
     cv::meanStdDev(temp, cv::Scalar(), v_stDev);
     qreal snr = 20* std::log10(255.0 / std::sqrt(v_stDev[0]*v_stDev[0] + v_stDev[1]*v_stDev[1] + v_stDev[2]*v_stDev[2]));
-    qWarning("SNR: %f", snr);
+    //qWarning("SNR: %f", snr);
     emit snrUpdated(snr);
     return snr;
 }
