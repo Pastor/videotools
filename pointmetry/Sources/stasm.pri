@@ -1,4 +1,4 @@
-STASM_PATH = C:/Programming/3rdParties/fastStasm/stasm
+STASM_PATH = C:/Programming/videotools/3rdparty/fastStasm/stasm
 
 INCLUDEPATH += $${STASM_PATH} \
                $${STASM_PATH}/MOD_1
