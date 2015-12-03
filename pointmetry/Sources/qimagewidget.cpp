@@ -206,6 +206,5 @@ void QImageWidget::setNumbersVisualization(bool value)
 void QImageWidget::updateSelection(const cv::Rect &rect)
 {
     m_Rect = rect;
-    updateSelectRect();
 }
 

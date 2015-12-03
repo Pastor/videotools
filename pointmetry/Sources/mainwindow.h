@@ -63,7 +63,7 @@ private:
     QStasm *pt_stasm;
     QOpencvProcessor *pt_opencv;
 
-   std::vector<QEasyPlot*> v_plots;
+    std::vector<QEasyPlot*> v_plots;
 
     void createActions();
     void createMenus();

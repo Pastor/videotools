@@ -23,7 +23,8 @@ SOURCES +=  main.cpp\
             qvideoslider.cpp \
             qstasm.cpp \
             qeasyplot.cpp \
-            qopencvprocessor.cpp
+            qopencvprocessor.cpp \
+    qcommutator.cpp
 
 HEADERS  += mainwindow.h \
             qimagewidget.h \
@@ -31,14 +32,15 @@ HEADERS  += mainwindow.h \
             qvideoslider.h \
             qstasm.h \
             qeasyplot.h \
-            qopencvprocessor.h
+            qopencvprocessor.h \
+    qcommutator.h
 
 FORMS    += mainwindow.ui
 
 include(opencv.pri)
 include(opengl.pri)
 include(stasm.pri)
-include(opencv.pri)
+include(opencl.pri)
 
 RC_ICONS = $${PWD}/../Resources/worker.ico
 #CONFIG(release, debug|release): DEFINES += QT_NO_WARNING_OUTPUT

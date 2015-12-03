@@ -23,7 +23,6 @@ public slots:
 
 private:
    float pt_landmarks[2 * stasm_NLANDMARKS];
-   float pt_buffer[2 * stasm_NLANDMARKS];
    double m_frametime;
    double m_time;
 };

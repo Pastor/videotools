@@ -23,7 +23,6 @@ int main(int argc, char *argv[])
     qWarning(cv::ocl::useOpenCL() ? "OpenCL is used" : "OpenCL is not used");
 #endif
 
-
     QApplication a(argc, argv);
     MainWindow w;
     w.show();

@@ -67,21 +67,21 @@ void DetectFaces(          // all face rects into detpars
     // the params below are accurate but slow
     static const double SCALE_FACTOR   = 1.1;
     static const int    MIN_NEIGHBORS  = 3;
-    static const int    DETECTOR_FLAGS = cv::CASCADE_FIND_BIGGEST_OBJECT | cv::CASCADE_SCALE_IMAGE;
+    static const int    DETECTOR_FLAGS = cv::CASCADE_FIND_BIGGEST_OBJECT;
 
-    int shiftX = last_face_rect.width / 4;
-    int shiftY = last_face_rect.height / 4;
-    last_face_rect = cv::Rect(last_face_rect.x - shiftX, last_face_rect.y - shiftY,
-                              1.5*last_face_rect.width, 1.5*last_face_rect.height);
+    cv::Rect rect_to_search(last_face_rect.x - last_face_rect.width / 2,
+                            last_face_rect.y - last_face_rect.height / 2,
+                            2*last_face_rect.width,
+                            2*last_face_rect.height);
 
     vec_Rect facerects = // all face rects in image
-        Detect(equalized_img, facedet_g, &last_face_rect,
+        Detect(equalized_img, facedet_g, &rect_to_search,
                SCALE_FACTOR, MIN_NEIGHBORS, DETECTOR_FLAGS, minpix);
 
     if(facerects.size() != 0)   {
         last_face_rect = facerects[0];
-        Image face_img(img, last_face_rect);
-        cv::equalizeHist(face_img, face_img);
+        /*Image face_img(img, last_face_rect);
+        cv::equalizeHist(face_img, face_img);*/
     }
     // copy face rects into the detpars vector
 

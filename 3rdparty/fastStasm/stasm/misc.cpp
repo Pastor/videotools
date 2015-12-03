@@ -804,7 +804,7 @@ vec_Rect Detect(                            // detect faces or facial features
 
         // TODO If we don't allocate feats now we get a crash on mem release later.
 
-        static const int MAX_NFACES_IN_IMG = int(256); // arb, but big
+        static const int MAX_NFACES_IN_IMG = int(512); // arb, but big
         vec_Rect feats(MAX_NFACES_IN_IMG);
 
         // Note: This call to detectMultiScale causes the Peak Working Set
@@ -818,7 +818,7 @@ vec_Rect Detect(                            // detect faces or facial features
             DiscountSearchRegion(feats, searchrect1);
 
         return feats;
-#endif
+#else
     CV_Assert(!cascade.empty());
 
     Rect searchrect1; searchrect1.width = 0;
@@ -834,7 +834,7 @@ vec_Rect Detect(                            // detect faces or facial features
 
     // TODO If we don't allocate feats now we get a crash on mem release later.
 
-    static const int MAX_NFACES_IN_IMG = int(1e4); // arb, but big
+    static const int MAX_NFACES_IN_IMG = int(512); // arb, but big
     vec_Rect feats(MAX_NFACES_IN_IMG);
 
     // Note: This call to detectMultiScale causes the Peak Working Set
@@ -848,6 +848,7 @@ vec_Rect Detect(                            // detect faces or facial features
         DiscountSearchRegion(feats, searchrect1);
 
     return feats;
+#endif
 }
 
 bool IsLeftFacing(EYAW eyaw) // true if eyaw is for a left facing face
