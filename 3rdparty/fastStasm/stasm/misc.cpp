@@ -786,6 +786,7 @@ vec_Rect Detect(                            // detect faces or facial features
     int                    flags,           // in
     int                    minwidth_pixels) // in: reduces false positives
 {
+#ifdef OPENCL_SPEEDUP
     CV_Assert(!cascade.empty());
 
     cv::UMat imgOcl = img.getUMat(cv::ACCESS_READ);
@@ -817,8 +818,8 @@ vec_Rect Detect(                            // detect faces or facial features
             DiscountSearchRegion(feats, searchrect1);
 
         return feats;
-
-    /*CV_Assert(!cascade.empty());
+#endif
+    CV_Assert(!cascade.empty());
 
     Rect searchrect1; searchrect1.width = 0;
     if (searchrect)
@@ -846,7 +847,7 @@ vec_Rect Detect(                            // detect faces or facial features
     if (!feats.empty() && searchrect1.width)
         DiscountSearchRegion(feats, searchrect1);
 
-    return feats;*/
+    return feats;
 }
 
 bool IsLeftFacing(EYAW eyaw) // true if eyaw is for a left facing face

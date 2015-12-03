@@ -36,6 +36,7 @@ public slots:
     void updateImage(const cv::Mat &image); // takes cv::Mat image and converts it to the appropriate Qt QImage format
     void updateImage(const cv::Mat &image, float *pointer, uint length);
     void setNumbersVisualization(bool value);
+    void updateSelection(const cv::Rect &rect);
 
 private:
     QImage m_qimage;        // stores current QImage instance

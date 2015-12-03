@@ -38,6 +38,8 @@ FORMS    += mainwindow.ui
 include(opencv.pri)
 include(opengl.pri)
 include(stasm.pri)
+include(opencv.pri)
 
 RC_ICONS = $${PWD}/../Resources/worker.ico
 #CONFIG(release, debug|release): DEFINES += QT_NO_WARNING_OUTPUT
+

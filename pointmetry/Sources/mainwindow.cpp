@@ -143,7 +143,9 @@ void MainWindow::makeConnections()
 
     connect(pt_opencv, SIGNAL(snrUpdated(double)), ui->snrLCD, SLOT(display(double)));
     connect(pt_opencv, SIGNAL(contrastUpdated(double)), ui->contrastLCD, SLOT(display(double)));
-    connect(pt_stasm, SIGNAL(eyesdistanceUpdated(double)), ui->eyesLCD, SLOT(display(double)));
+    connect(pt_stasm, SIGNAL(eyesdistanceUpdated(double)), ui->eyesLCD, SLOT(display(double)));   
+    qRegisterMetaType<cv::Rect>("cv::Rect");
+    connect(pt_stasm, SIGNAL(facerectUpdated(cv::Rect)), ui->display, SLOT(updateSelection(cv::Rect)));
 }
 
 void MainWindow::updateStatus(const QString &str)

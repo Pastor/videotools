@@ -16,6 +16,7 @@ signals:
     void frametimeUpdated(double value);
     void facesEnds();
     void eyesdistanceUpdated(double value);
+    void facerectUpdated(const cv::Rect &rect);
 
 public slots:
    void search_single(const cv::Mat &image);

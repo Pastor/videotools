@@ -126,4 +126,7 @@ void stasm_convert_shape( // convert stasm_NLANDMARKS points to given number of 
 extern "C"
 void stasm_printf(const char* format, ...); // print to stdout and stasm.log
 
+extern "C"
+cv::Rect stasm_get_face_rect();
+
 #endif // STASM_LIB_H

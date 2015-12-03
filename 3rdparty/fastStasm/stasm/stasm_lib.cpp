@@ -321,3 +321,8 @@ void stasm_printf(      // print to stdout and to the stasm.log file if it is op
     va_end(args);
     lputs(s);
 }
+
+cv::Rect stasm_get_face_rect()
+{
+    return stasm::last_face_rect;
+}

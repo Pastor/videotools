@@ -29,9 +29,13 @@ void QStasm::search_single(const cv::Mat &image)
 
     if( stasm_search_auto(&facesFound, pt_landmarks)) {
         //qWarning("Faces found: %d", facesFound);
+        cv::Rect rect = stasm_get_face_rect();
+        //qWarning("Rect x%d y%d w%d h%d", rect.x, rect.y, rect.width, rect.height);
+        emit facerectUpdated(rect);
+
         for(uint i = 0; i < 2 * stasm_NLANDMARKS; i++)
             pt_buffer[i] = pt_landmarks[i];
-        emit landmarksUpdated(image, pt_buffer, 2 * stasm_NLANDMARKS);
+        emit landmarksUpdated(image, pt_landmarks, 2 * stasm_NLANDMARKS);
         emit eyesdistanceUpdated( std::sqrt((pt_buffer[2*38] - pt_buffer[2*39])*(pt_buffer[2*38] - pt_buffer[2*39]) + (pt_buffer[2*38+1] - pt_buffer[2*39+1])*(pt_buffer[2*38+1] - pt_buffer[2*39+1])) );
     } else emit facesEnds();
 

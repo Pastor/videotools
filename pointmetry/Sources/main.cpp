@@ -5,6 +5,7 @@
 
 int main(int argc, char *argv[])
 {
+#ifdef OPENCL_SPEEDUP
     cv::ocl::Context context;
     if (!context.create(cv::ocl::Device::TYPE_GPU))
         qWarning("Failed creating the context...");
@@ -20,6 +21,7 @@ int main(int argc, char *argv[])
     }
     cv::ocl::setUseOpenCL(true);
     qWarning(cv::ocl::useOpenCL() ? "OpenCL is used" : "OpenCL is not used");
+#endif
 
 
     QApplication a(argc, argv);

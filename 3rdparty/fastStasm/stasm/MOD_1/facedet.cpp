@@ -4,7 +4,6 @@
 
 #include "../stasm.h"
 
-static cv::Rect subregion;
 
 namespace stasm
 {
@@ -12,9 +11,9 @@ typedef vector<DetPar> vec_DetPar;
 
 static cv::CascadeClassifier facedet_g;  // the face detector
 
-static const double BORDER_FRAC = .1; // fraction of image width or height
+static const double BORDER_FRAC = .05; // fraction of image width or height
                                       // use 0.0 for no border
-
+cv::Rect last_face_rect;
 //-----------------------------------------------------------------------------
 
 void FaceDet::OpenFaceDetector_( // called by stasm_init, init face det from XML file
@@ -49,15 +48,15 @@ void DetectFaces(          // all face rects into detpars
 {
     CV_Assert(!facedet_g.empty()); // check that OpenFaceDetector_ was called
 
-    int leftborder = 0, topborder = 0; // border size in pixels
+    /*int leftborder = 0, topborder = 0; // border size in pixels
     Image bordered_img(BORDER_FRAC == 0?
-                       img: EnborderImg(leftborder, topborder, img));
+                       img: EnborderImg(leftborder, topborder, img));*/
 
     // Detection results are very slightly better with equalization
     // (tested on the MUCT images, which are not pre-equalized), and
     // it's quick enough to equalize (roughly 10ms on a 1.6 GHz laptop).
 
-    Image equalized_img; cv::equalizeHist(bordered_img, equalized_img);
+    Image equalized_img; cv::equalizeHist(img, equalized_img);
 
     CV_Assert(minwidth >= 1 && minwidth <= 100);
 
@@ -68,18 +67,22 @@ void DetectFaces(          // all face rects into detpars
     // the params below are accurate but slow
     static const double SCALE_FACTOR   = 1.1;
     static const int    MIN_NEIGHBORS  = 3;
-    static const int    DETECTOR_FLAGS = cv::CASCADE_FIND_BIGGEST_OBJECT;
+    static const int    DETECTOR_FLAGS = cv::CASCADE_FIND_BIGGEST_OBJECT | cv::CASCADE_SCALE_IMAGE;
 
-    int shiftX = subregion.width / 4;
-    int shiftY = subregion.height / 4;
-    subregion = cv::Rect(subregion.x - shiftX, subregion.y - shiftY, 1.5*subregion.width, 1.5*subregion.height);
-    subregion &= cv::Rect(0,0, equalized_img.cols, equalized_img.rows);
+    int shiftX = last_face_rect.width / 4;
+    int shiftY = last_face_rect.height / 4;
+    last_face_rect = cv::Rect(last_face_rect.x - shiftX, last_face_rect.y - shiftY,
+                              1.5*last_face_rect.width, 1.5*last_face_rect.height);
+
     vec_Rect facerects = // all face rects in image
-        Detect(equalized_img, facedet_g, &subregion,
+        Detect(equalized_img, facedet_g, &last_face_rect,
                SCALE_FACTOR, MIN_NEIGHBORS, DETECTOR_FLAGS, minpix);
 
-    if(facerects.size() != 0)
-        subregion = facerects[0];
+    if(facerects.size() != 0)   {
+        last_face_rect = facerects[0];
+        Image face_img(img, last_face_rect);
+        cv::equalizeHist(face_img, face_img);
+    }
     // copy face rects into the detpars vector
 
     detpars.resize(NSIZE(facerects));
@@ -90,8 +93,8 @@ void DetectFaces(          // all face rects into detpars
         // detpar.x and detpar.y is the center of the face rectangle
         detpar.x = facerect->x + facerect->width / 2.;
         detpar.y = facerect->y + facerect->height / 2.;
-        detpar.x -= leftborder; // discount the border we added earlier
-        detpar.y -= topborder;
+        //detpar.x -= leftborder; // discount the border we added earlier
+        //detpar.y -= topborder;
         detpar.width  = double(facerect->width);
         detpar.height = double(facerect->height);
         detpar.yaw = 0; // assume face has no yaw in this version of Stasm
