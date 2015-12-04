@@ -50,6 +50,8 @@ private:
     QAction *pt_aboutAct;
     QAction *pt_helpAct;
     QAction *pt_numAct;
+    QAction *pt_imageAct;
+    QAction *pt_selectionAct;
     QAction *pt_plotAct;
 
     QMenu *pt_sourceMenu;

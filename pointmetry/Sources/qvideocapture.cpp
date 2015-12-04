@@ -381,6 +381,7 @@ bool QVideoCapture::isOpened()
 
 QVideoCapture::~QVideoCapture()
 {
+    close();
     delete pt_timer;
 }
 
@@ -469,8 +470,8 @@ int QVideoCapture::open_deviceSelectDialog()
 void QVideoCapture::initializeTimer()
 {
     pt_timer = new QTimer();
-    //pt_timer->setTimerType(Qt::PreciseTimer);
-    connect(pt_timer, SIGNAL( timeout() ), this, SLOT( read_frame() )); // makes a connection between timer signal and class slot
+    pt_timer->setTimerType(Qt::PreciseTimer);
+    connect(pt_timer, SIGNAL(timeout()), this, SLOT(read_frame())); // makes a connection between timer signal and class slot
 }
 
 int QVideoCapture::getFramesCount()

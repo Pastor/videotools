@@ -36,6 +36,8 @@ public slots:
     void updateImage(const cv::Mat &image); // takes cv::Mat image and converts it to the appropriate Qt QImage format
     void updateImage(const cv::Mat &image, float *pointer, uint length);
     void setNumbersVisualization(bool value);
+    void setSelectionVisualization(bool value);
+    void setImageVisualization(bool value);
     void updateSelection(const cv::Rect &rect);
 
 private:
@@ -60,6 +62,8 @@ private:
     void drawPoints(QPainter &painter);
 
     bool f_numbers;
+    bool f_image;
+    bool f_selection;
 
 protected:
     void paintEvent(QPaintEvent *);

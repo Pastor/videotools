@@ -45,9 +45,9 @@ void QOpencvProcessor::custom_algorithm(const cv::Mat &input)
     }*/
 
     //-------------Time measurement--------------
-    //__calculateContrast(input);
+    __calculateContrast(input);
     //__calculateSharpness(input);
-    //__calculateSNR(input);
+    __calculateSNR(input);
 
     //m_framePeriod = (cv::getTickCount() -  m_timeCounter) * 1000.0 / cv::getTickFrequency(); // result is calculated in milliseconds
     //m_timeCounter = cv::getTickCount();

@@ -20,8 +20,9 @@ QImageWidget::QImageWidget(QWidget *parent): WIDGET_CLASS(parent)
         qWarning("QOpenGLWidget manual samples: %d", this->format().samples());
     #endif
     f_numbers = true;
+    f_selection = true;
+    f_image = true;
     m_points = 0;
-    f_select = true;
 }
 //-----------------------------------------------------------------------------------
 void QImageWidget::updateImage(const cv::Mat& image)
@@ -68,11 +69,13 @@ void QImageWidget::paintEvent(QPaintEvent* )
     updateViewRect();
     QPainter painter( this );
     painter.fillRect(rect(), QColor(10,10,10));
-    painter.drawImage(m_viewRect, m_qimage);
+    if(f_image)
+        painter.drawImage(m_viewRect, m_qimage);
     painter.setRenderHint(QPainter::Antialiasing);
     drawString(painter);
     drawPoints(painter);
-    drawSelection(painter);
+    if(f_selection)
+        drawSelection(painter);
 }
 //------------------------------------------------------------------------------------
 void QImageWidget::mousePressEvent(QMouseEvent *event)
@@ -197,13 +200,23 @@ void QImageWidget::drawPoints(QPainter &painter)
     }
 }
 //--------------------------------------------------------------------------------------
+void QImageWidget::updateSelection(const cv::Rect &rect)
+{
+    m_Rect = rect;
+}
+//--------------------------------------------------------------------------------------
 void QImageWidget::setNumbersVisualization(bool value)
 {
     f_numbers = value;
 }
 //--------------------------------------------------------------------------------------
-void QImageWidget::updateSelection(const cv::Rect &rect)
+void QImageWidget::setImageVisualization(bool value)
 {
-    m_Rect = rect;
+    f_image = value;
+}
+//--------------------------------------------------------------------------------------
+void QImageWidget::setSelectionVisualization(bool value)
+{
+    f_selection = value;
 }
 

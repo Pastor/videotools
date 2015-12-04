@@ -69,6 +69,18 @@ void MainWindow::createActions()
     pt_numAct->setChecked(true);
     connect(pt_numAct, SIGNAL(triggered(bool)), ui->display, SLOT(setNumbersVisualization(bool)));
 
+    pt_imageAct = new QAction(tr("&Image"), this);
+    pt_imageAct->setStatusTip("Toogle show image");
+    pt_imageAct->setCheckable(true);
+    pt_imageAct->setChecked(true);
+    connect(pt_imageAct, SIGNAL(triggered(bool)), ui->display, SLOT(setImageVisualization(bool)));
+
+    pt_selectionAct = new QAction(tr("&Select"), this);
+    pt_selectionAct->setStatusTip("Toogle show selection");
+    pt_selectionAct->setCheckable(true);
+    pt_selectionAct->setChecked(true);
+    connect(pt_selectionAct, SIGNAL(triggered(bool)), ui->display, SLOT(setSelectionVisualization(bool)));
+
     pt_deviceAct = new QAction(tr("&Device"),this);
     pt_deviceAct->setStatusTip(tr("Open video device"));
     connect(pt_deviceAct, SIGNAL(triggered()), this, SLOT(callDeviceSelectDialog()));
@@ -86,6 +98,9 @@ void MainWindow::createMenus()
 
     pt_optionsMenu = menuBar()->addMenu(tr("&Options"));
     pt_optionsMenu->addAction(pt_numAct);
+    pt_optionsMenu->addAction(pt_imageAct);
+    pt_optionsMenu->addAction(pt_selectionAct);
+    pt_optionsMenu->addSeparator();
     pt_optionsMenu->addAction(pt_plotAct);
 
     pt_helpMenu = menuBar()->addMenu(tr("&Help"));
@@ -99,6 +114,7 @@ void MainWindow::createThreads()
     pt_videocapture = new QVideoCapture();
     pt_videocapture->moveToThread(pt_videoThread);
     connect(pt_videoThread, SIGNAL(started()), pt_videocapture, SLOT(initializeTimer()));
+    connect(pt_videoThread, SIGNAL(finished()), pt_videocapture, SLOT(close()));
     connect(pt_videoThread, SIGNAL(finished()), pt_videocapture, SLOT(deleteLater()));
 
     pt_stasmThread = new QThread(this);
@@ -114,9 +130,9 @@ void MainWindow::createThreads()
     qRegisterMetaType<cv::Mat>("cv::Mat");
     connect(pt_videocapture, SIGNAL(frameUpdated(cv::Mat)), pt_opencv, SLOT(custom_algorithm(cv::Mat)));
     connect(pt_videocapture,SIGNAL(frameUpdated(cv::Mat)), pt_stasm, SLOT(search_single(cv::Mat)), Qt::BlockingQueuedConnection);
-    connect(pt_stasm, SIGNAL(landmarksUpdated(cv::Mat,float*,uint)), ui->display, SLOT(updateImage(cv::Mat,float*,uint)));
+    connect(pt_stasm, SIGNAL(landmarksUpdated(cv::Mat,float*,uint)), ui->display, SLOT(updateImage(cv::Mat,float*,uint)), Qt::BlockingQueuedConnection);
 
-    pt_videoThread->start(QThread::LowestPriority);
+    pt_videoThread->start(QThread::LowPriority);
     pt_stasmThread->start(QThread::HighPriority);
     pt_opencvThread->start();
 }
@@ -233,4 +249,5 @@ void MainWindow::closeEvent(QCloseEvent*)
         temp = v_plots[i];
         temp->close();
     }
+    disconnect(pt_videocapture,0,0,0);
 }
