@@ -45,6 +45,7 @@ private:
 
 }; // end class FaceDet
 
-extern cv::Rect last_face_rect;
+cv::Rect get_average_face_rect();
+
 } // namespace stasm
 #endif // STASM_FACEDET.H

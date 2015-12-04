@@ -324,5 +324,5 @@ void stasm_printf(      // print to stdout and to the stasm.log file if it is op
 
 cv::Rect stasm_get_face_rect()
 {
-    return stasm::last_face_rect;
+    return get_average_face_rect();
 }

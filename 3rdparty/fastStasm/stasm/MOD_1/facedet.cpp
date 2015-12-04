@@ -4,7 +4,7 @@
 
 #include "../stasm.h"
 
-#define FACES_ROW_LENGTH 5
+#define FACES_ROW_LENGTH 9
 
 namespace stasm
 {
@@ -16,7 +16,7 @@ static const double BORDER_FRAC = .1; // fraction of image width or height
                                       // use 0.0 for no border
 
 //-------------------------------------------------------------------------------
-cv::Rect last_face_rect;                    // stores Rect of last face found
+static cv::Rect face_rect;                    // stores Rect of last face found
 static cv::Rect v_face[FACES_ROW_LENGTH];   // accumulates Rect of faces
 static int m_pos = 0;
 bool first_search = true;
@@ -102,10 +102,10 @@ void DetectFaces(          // all face rects into detpars
     static const int    MIN_NEIGHBORS  = 3;
     static const int    DETECTOR_FLAGS = cv::CASCADE_FIND_BIGGEST_OBJECT;
 
-    cv::Rect rect_to_search(last_face_rect.x - last_face_rect.width / 2,
-                            last_face_rect.y - last_face_rect.height / 2,
-                            2*last_face_rect.width,
-                            2*last_face_rect.height);
+    cv::Rect rect_to_search(face_rect.x - face_rect.width / 2,
+                            face_rect.y - face_rect.height / 2,
+                            2*face_rect.width,
+                            2*face_rect.height);
 
     vec_Rect facerects = // all face rects in image
         Detect(equalized_img, facedet_g, &rect_to_search,
@@ -117,13 +117,14 @@ void DetectFaces(          // all face rects into detpars
             fill_average_face_rect(facerects[0]);
         }
         update_average_face_rect(facerects[0]);
-        last_face_rect = get_average_face_rect();
+        face_rect = get_average_face_rect();
     }
     // copy face rects into the detpars vector
+
     detpars.resize(NSIZE(facerects));
         for (int i = 0; i < NSIZE(facerects); i++)
         {
-            Rect* facerect = &last_face_rect;
+            Rect* facerect = &face_rect;
             DetPar detpar; // detpar constructor sets all fields INVALID
             // detpar.x and detpar.y is the center of the face rectangle
             detpar.x = facerect->x + facerect->width / 2.;
