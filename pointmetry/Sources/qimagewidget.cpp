@@ -162,7 +162,7 @@ void QImageWidget::drawSelection(QPainter &painter)
     if(!m_selectRect.isNull())
     {
         QPen pen(Qt::NoBrush, 1.0, Qt::DashLine, Qt::RoundCap, Qt::RoundJoin);
-        pen.setColor(QColor(0,255,0));
+        pen.setColor(Qt::black);
         painter.setPen( pen );
         painter.setBrush(Qt::NoBrush);
         painter.drawRect(m_selectRect);
@@ -173,11 +173,10 @@ void QImageWidget::drawPoints(QPainter &painter)
 {
     if(v_points != NULL && m_points > 0) {
 
-        qreal radius = std::log((double)m_viewRect.height())/std::log(5.0);
+        qreal radius = std::log10((double)m_viewRect.height());
         QPainterPath path;
-        //path.setFillRule(Qt::WindingFill);
         QFont font("Tahoma");
-        font.setPointSizeF(radius*1.5);
+        font.setPointSizeF(radius*2.5);
         painter.setBrush(QColor(255,255,255));
 
         QPointF c;

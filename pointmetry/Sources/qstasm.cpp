@@ -24,11 +24,10 @@ void QStasm::search_single(const cv::Mat &image)
                      temp.rows,
                      "",
                      0,
-                     20);
+                     15);
     int facesFound = 0;
 
     if( stasm_search_auto(&facesFound, pt_landmarks)) {
-        qWarning("Faces found: %d", facesFound);
         cv::Rect rect = stasm_get_face_rect();
         emit facerectUpdated(rect);
         emit landmarksUpdated(image, pt_landmarks, 2 * stasm_NLANDMARKS);

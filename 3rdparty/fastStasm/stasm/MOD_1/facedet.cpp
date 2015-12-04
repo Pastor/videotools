@@ -20,6 +20,7 @@ static cv::Rect face_rect;                    // stores Rect of last face found
 static cv::Rect v_face[FACES_ROW_LENGTH];   // accumulates Rect of faces
 static int m_pos = 0;
 bool first_search = true;
+uint row_without_face = 0;
 void fill_average_face_rect(const cv::Rect &rect)
 {
     for(uint i = 0; i < FACES_ROW_LENGTH; i++)
@@ -117,20 +118,25 @@ void DetectFaces(          // all face rects into detpars
             fill_average_face_rect(facerects[0]);
         }
         update_average_face_rect(facerects[0]);
-        face_rect = get_average_face_rect();
+        face_rect = facerects[0];
+        row_without_face = 0;
+    } else {
+        row_without_face++;
+        if(row_without_face == FACES_ROW_LENGTH)
+            face_rect = cv::Rect(0, 0, img.cols, img.rows);
     }
     // copy face rects into the detpars vector
 
     detpars.resize(NSIZE(facerects));
         for (int i = 0; i < NSIZE(facerects); i++)
         {
-            Rect* facerect = &face_rect;
+            Rect facerect =  get_average_face_rect();
             DetPar detpar; // detpar constructor sets all fields INVALID
             // detpar.x and detpar.y is the center of the face rectangle
-            detpar.x = facerect->x + facerect->width / 2.;
-            detpar.y = facerect->y + facerect->height / 2.;
-            detpar.width  = double(facerect->width);
-            detpar.height = double(facerect->height);
+            detpar.x = facerect.x + facerect.width / 2.;
+            detpar.y = facerect.y + facerect.height / 2.;
+            detpar.width  = double(facerect.width);
+            detpar.height = double(facerect.height);
             detpar.yaw = 0; // assume face has no yaw in this version of Stasm
             detpar.eyaw = EYAW00;
             detpars[i] = detpar;
@@ -143,8 +149,6 @@ void DetectFaces(          // all face rects into detpars
         // detpar.x and detpar.y is the center of the face rectangle
         detpar.x = facerect->x + facerect->width / 2.;
         detpar.y = facerect->y + facerect->height / 2.;
-        detpar.x -= leftborder; // discount the border we added earlier
-        detpar.y -= topborder;
         detpar.width  = double(facerect->width);
         detpar.height = double(facerect->height);
         detpar.yaw = 0; // assume face has no yaw in this version of Stasm

@@ -53,7 +53,7 @@ class provides some GUI interface to cv::VideoCapture::set(...) function.
 #define MAX_EXPOSURE -1
 #define DEFAULT_EXPOSURE -5
 
-#define DEFAULT_FRAME_PERIOD 35 // in ms
+#define DEFAULT_FRAME_PERIOD 0 // in ms
 //--------------------------------------------------------------------------------------------------
 
 class QVideoCapture : public QObject

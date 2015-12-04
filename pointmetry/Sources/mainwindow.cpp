@@ -116,8 +116,8 @@ void MainWindow::createThreads()
     connect(pt_videocapture,SIGNAL(frameUpdated(cv::Mat)), pt_stasm, SLOT(search_single(cv::Mat)), Qt::BlockingQueuedConnection);
     connect(pt_stasm, SIGNAL(landmarksUpdated(cv::Mat,float*,uint)), ui->display, SLOT(updateImage(cv::Mat,float*,uint)));
 
-    pt_videoThread->start(QThread::LowPriority);
-    pt_stasmThread->start();
+    pt_videoThread->start(QThread::LowestPriority);
+    pt_stasmThread->start(QThread::HighPriority);
     pt_opencvThread->start();
 }
 

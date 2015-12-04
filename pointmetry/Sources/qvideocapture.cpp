@@ -21,7 +21,8 @@ bool QVideoCapture::openfile(const QString &filename)
     if( m_cvCapture.open( filename.toLocal8Bit().constData() ) )
     {
         deviceFlag = false;
-        pt_timer->setInterval( (int)1000/m_cvCapture.get(CV_CAP_PROP_FPS) ); // CV_CAP_PROP_FPS - m_frame rate
+        pt_timer->setInterval(DEFAULT_FRAME_PERIOD);
+        //pt_timer->setInterval( (int)1000/m_cvCapture.get(CV_CAP_PROP_FPS) ); // CV_CAP_PROP_FPS - m_frame rate
         m_frames = m_cvCapture.get(CV_CAP_PROP_FRAME_COUNT);
         emit framesInFile(m_frames);
         return true;
@@ -104,7 +105,6 @@ bool QVideoCapture::read_frame()
         {
             int frame_id = (int)m_cvCapture.get(CV_CAP_PROP_POS_FRAMES);
             emit positionUpdated(frame_id);
-            qWarning("Frame %d", frame_id);
         }
         return true;
     }
