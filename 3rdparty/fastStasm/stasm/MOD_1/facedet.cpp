@@ -4,6 +4,7 @@
 
 #include "../stasm.h"
 
+#define FACES_ROW_LENGTH 5
 
 namespace stasm
 {
@@ -11,9 +12,45 @@ typedef vector<DetPar> vec_DetPar;
 
 static cv::CascadeClassifier facedet_g;  // the face detector
 
-static const double BORDER_FRAC = .05; // fraction of image width or height
+static const double BORDER_FRAC = .1; // fraction of image width or height
                                       // use 0.0 for no border
-cv::Rect last_face_rect;
+
+//-------------------------------------------------------------------------------
+cv::Rect last_face_rect;                    // stores Rect of last face found
+static cv::Rect v_face[FACES_ROW_LENGTH];   // accumulates Rect of faces
+static int m_pos = 0;
+bool first_search = true;
+void fill_average_face_rect(const cv::Rect &rect)
+{
+    for(uint i = 0; i < FACES_ROW_LENGTH; i++)
+        v_face[i] = rect;
+}
+
+cv::Rect get_average_face_rect()
+{
+    float x = 0.0;
+    float y = 0.0;
+    float w = 0.0;
+    float h = 0.0;
+    for(uint i = 0; i < FACES_ROW_LENGTH; i++)
+    {
+        x += v_face[i].x;
+        y += v_face[i].y;
+        w += v_face[i].width;
+        h += v_face[i].height;
+    }
+    x /= FACES_ROW_LENGTH;
+    y /= FACES_ROW_LENGTH;
+    w /= FACES_ROW_LENGTH;
+    h /= FACES_ROW_LENGTH;
+    return cv::Rect((int)x,(int)y,(int)w,(int)h);
+}
+
+void update_average_face_rect(const cv::Rect &rect)
+{
+    v_face[m_pos] = rect;
+    m_pos = (++m_pos) % FACES_ROW_LENGTH;
+}
 //-----------------------------------------------------------------------------
 
 void FaceDet::OpenFaceDetector_( // called by stasm_init, init face det from XML file
@@ -48,10 +85,6 @@ void DetectFaces(          // all face rects into detpars
 {
     CV_Assert(!facedet_g.empty()); // check that OpenFaceDetector_ was called
 
-    /*int leftborder = 0, topborder = 0; // border size in pixels
-    Image bordered_img(BORDER_FRAC == 0?
-                       img: EnborderImg(leftborder, topborder, img));*/
-
     // Detection results are very slightly better with equalization
     // (tested on the MUCT images, which are not pre-equalized), and
     // it's quick enough to equalize (roughly 10ms on a 1.6 GHz laptop).
@@ -79,13 +112,29 @@ void DetectFaces(          // all face rects into detpars
                SCALE_FACTOR, MIN_NEIGHBORS, DETECTOR_FLAGS, minpix);
 
     if(facerects.size() != 0)   {
-        last_face_rect = facerects[0];
-        /*Image face_img(img, last_face_rect);
-        cv::equalizeHist(face_img, face_img);*/
+        if(first_search)    {
+            first_search = false;
+            fill_average_face_rect(facerects[0]);
+        }
+        update_average_face_rect(facerects[0]);
+        last_face_rect = get_average_face_rect();
     }
     // copy face rects into the detpars vector
-
     detpars.resize(NSIZE(facerects));
+        for (int i = 0; i < NSIZE(facerects); i++)
+        {
+            Rect* facerect = &last_face_rect;
+            DetPar detpar; // detpar constructor sets all fields INVALID
+            // detpar.x and detpar.y is the center of the face rectangle
+            detpar.x = facerect->x + facerect->width / 2.;
+            detpar.y = facerect->y + facerect->height / 2.;
+            detpar.width  = double(facerect->width);
+            detpar.height = double(facerect->height);
+            detpar.yaw = 0; // assume face has no yaw in this version of Stasm
+            detpar.eyaw = EYAW00;
+            detpars[i] = detpar;
+        }
+    /*detpars.resize(NSIZE(facerects));
     for (int i = 0; i < NSIZE(facerects); i++)
     {
         Rect* facerect = &facerects[i];
@@ -93,14 +142,14 @@ void DetectFaces(          // all face rects into detpars
         // detpar.x and detpar.y is the center of the face rectangle
         detpar.x = facerect->x + facerect->width / 2.;
         detpar.y = facerect->y + facerect->height / 2.;
-        //detpar.x -= leftborder; // discount the border we added earlier
-        //detpar.y -= topborder;
+        detpar.x -= leftborder; // discount the border we added earlier
+        detpar.y -= topborder;
         detpar.width  = double(facerect->width);
         detpar.height = double(facerect->height);
         detpar.yaw = 0; // assume face has no yaw in this version of Stasm
         detpar.eyaw = EYAW00;
         detpars[i] = detpar;
-    }
+    }*/
 }
 // order by increasing distance from left marg, and dist from top marg within that
 

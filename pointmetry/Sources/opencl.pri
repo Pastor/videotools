@@ -1,4 +1,4 @@
-CONFIG -= opencl
+#CONFIG += opencl
 
 opencl {
 DEFINES += OPENCL_SPEEDUP
