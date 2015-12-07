@@ -13,6 +13,7 @@
 #include "qstasm.h"
 #include "qeasyplot.h"
 #include "qopencvprocessor.h"
+#include "qcommutator.h"
 
 namespace Ui {
 class MainWindow;
@@ -32,6 +33,7 @@ private slots:
     void makeConnections();
     void callFileSelectDialog();
     void callDeviceSelectDialog();
+    void callDirectShowDialog();
     void about();
     void help();
     void addPlot();
@@ -53,6 +55,7 @@ private:
     QAction *pt_imageAct;
     QAction *pt_selectionAct;
     QAction *pt_plotAct;
+    QAction *pt_dshowAct;
 
     QMenu *pt_sourceMenu;
     QMenu *pt_optionsMenu;
@@ -62,7 +65,7 @@ private:
     QThread *pt_stasmThread;
     QThread *pt_opencvThread;
     QVideoCapture *pt_videocapture;
-    QStasm *pt_stasm;
+    QCommutator *pt_commutator;
     QOpencvProcessor *pt_opencv;
 
     std::vector<QEasyPlot*> v_plots;

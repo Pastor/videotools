@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <QDesktopServices>
+#include <QProcess>;
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -88,6 +89,10 @@ void MainWindow::createActions()
     pt_plotAct = new QAction(tr("&Plot"),this);
     pt_plotAct->setStatusTip(tr("New plot"));
     connect(pt_plotAct, SIGNAL(triggered()), this, SLOT(addPlot()));
+
+    pt_dshowAct = new QAction(tr("&DSdialog"), this);
+    pt_dshowAct->setStatusTip("Open device settings");
+    connect(pt_dshowAct, SIGNAL(triggered()), this, SLOT(callDirectShowDialog()));
 }
 
 void MainWindow::createMenus()
@@ -95,6 +100,8 @@ void MainWindow::createMenus()
     pt_sourceMenu = menuBar()->addMenu(tr("&Source"));
     pt_sourceMenu->addAction(pt_fileAct);
     pt_sourceMenu->addAction(pt_deviceAct);
+    pt_sourceMenu->addSeparator();
+    pt_sourceMenu->addAction(pt_dshowAct);
 
     pt_optionsMenu = menuBar()->addMenu(tr("&Options"));
     pt_optionsMenu->addAction(pt_numAct);
@@ -102,6 +109,7 @@ void MainWindow::createMenus()
     pt_optionsMenu->addAction(pt_selectionAct);
     pt_optionsMenu->addSeparator();
     pt_optionsMenu->addAction(pt_plotAct);
+
 
     pt_helpMenu = menuBar()->addMenu(tr("&Help"));
     pt_helpMenu->addAction(pt_aboutAct);
@@ -118,9 +126,9 @@ void MainWindow::createThreads()
     connect(pt_videoThread, SIGNAL(finished()), pt_videocapture, SLOT(deleteLater()));
 
     pt_stasmThread = new QThread(this);
-    pt_stasm = new QStasm();
-    pt_stasm->moveToThread(pt_stasmThread);
-    connect(pt_stasmThread, SIGNAL(finished()), pt_stasm, SLOT(deleteLater()));
+    pt_commutator = new QCommutator();
+    pt_commutator->moveToThread(pt_stasmThread);
+    connect(pt_stasmThread, SIGNAL(finished()), pt_commutator, SLOT(deleteLater()));
 
     pt_opencvThread = new QThread(this);
     pt_opencv = new QOpencvProcessor();
@@ -129,12 +137,12 @@ void MainWindow::createThreads()
 
     qRegisterMetaType<cv::Mat>("cv::Mat");
     connect(pt_videocapture, SIGNAL(frameUpdated(cv::Mat)), pt_opencv, SLOT(custom_algorithm(cv::Mat)));
-    connect(pt_videocapture,SIGNAL(frameUpdated(cv::Mat)), pt_stasm, SLOT(search_single(cv::Mat)), Qt::BlockingQueuedConnection);
-    connect(pt_stasm, SIGNAL(landmarksUpdated(cv::Mat,float*,uint)), ui->display, SLOT(updateImage(cv::Mat,float*,uint)), Qt::BlockingQueuedConnection);
+    connect(pt_videocapture,SIGNAL(frameUpdated(cv::Mat)), pt_commutator, SLOT(search_single(cv::Mat)),Qt::BlockingQueuedConnection);
+    connect(pt_commutator, SIGNAL(landmarksUpdated(cv::Mat,float*,uint)), ui->display, SLOT(updateImage(cv::Mat,float*,uint)));
 
-    pt_videoThread->start(QThread::LowPriority);
-    pt_stasmThread->start(QThread::HighPriority);
-    pt_opencvThread->start();
+    pt_videoThread->start(QThread::LowestPriority);
+    pt_stasmThread->start();
+    //pt_opencvThread->start();
 }
 
 void MainWindow::makeConnections()
@@ -155,13 +163,13 @@ void MainWindow::makeConnections()
     connect(pt_videocapture, SIGNAL(positionUpdated(int)), ui->frameLCD, SLOT(display(int)));
     connect(pt_videocapture, SIGNAL(framesInFile(int)), ui->totalframesLCD, SLOT(display(int)));
 
-    connect(pt_stasm, SIGNAL(frametimeUpdated(double)), ui->frametimeLCD, SLOT(display(double)));
+    connect(pt_commutator, SIGNAL(frametimeUpdated(double)), ui->frametimeLCD, SLOT(display(double)));
 
     connect(pt_opencv, SIGNAL(snrUpdated(double)), ui->snrLCD, SLOT(display(double)));
     connect(pt_opencv, SIGNAL(contrastUpdated(double)), ui->contrastLCD, SLOT(display(double)));
-    connect(pt_stasm, SIGNAL(eyesdistanceUpdated(double)), ui->eyesLCD, SLOT(display(double)));   
+    connect(pt_commutator, SIGNAL(eyesdistanceUpdated(double)), ui->eyesLCD, SLOT(display(double)));
     qRegisterMetaType<cv::Rect>("cv::Rect");
-    connect(pt_stasm, SIGNAL(facerectUpdated(cv::Rect)), ui->display, SLOT(updateSelection(cv::Rect)));
+    connect(pt_commutator, SIGNAL(facerectUpdated(cv::Rect)), ui->display, SLOT(updateSelection(cv::Rect)));
 }
 
 void MainWindow::updateStatus(const QString &str)
@@ -250,4 +258,13 @@ void MainWindow::closeEvent(QCloseEvent*)
         temp->close();
     }
     disconnect(pt_videocapture,0,0,0);
+}
+
+void MainWindow::callDirectShowDialog()
+{
+    if(!QProcess::startDetached("WVCF_utility.exe", QStringList("-l -c")))
+    {
+        QMessageBox msgBox(QMessageBox::Information, this->windowTitle(), tr("Can not find utility"), QMessageBox::Ok, this, Qt::Dialog);
+        msgBox.exec();
+    }
 }

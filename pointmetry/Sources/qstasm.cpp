@@ -10,6 +10,12 @@ QStasm::QStasm(QObject *parent) :
     #endif
 }
 
+void QStasm::setID(int value)
+{
+    m_id = value;
+    qWarning("Stasm %d was prepared", m_id);
+}
+
 void QStasm::search_single(const cv::Mat &image)
 {
     cv::Mat temp;
@@ -38,4 +44,6 @@ void QStasm::search_single(const cv::Mat &image)
     m_frametime = (cv::getTickCount() -  m_time) * 1000.0 / cv::getTickFrequency(); // result is calculated in milliseconds
     m_time = cv::getTickCount();
     emit frametimeUpdated(m_frametime);
+
+    emit doneWork(m_id);
 }

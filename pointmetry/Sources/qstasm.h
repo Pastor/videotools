@@ -17,14 +17,17 @@ signals:
     void facesEnds();
     void eyesdistanceUpdated(double value);
     void facerectUpdated(const cv::Rect &rect);
+    void doneWork(int ID);
 
 public slots:
    void search_single(const cv::Mat &image);
+   void setID(int value);
 
 private:
    float pt_landmarks[2 * stasm_NLANDMARKS];
    double m_frametime;
    double m_time;
+   int m_id;
 };
 
 #endif // QSTASM_H

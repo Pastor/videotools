@@ -23,7 +23,9 @@ SOURCES +=  main.cpp\
             qvideoslider.cpp \
             qstasm.cpp \
             qeasyplot.cpp \
-            qopencvprocessor.cpp
+            qopencvprocessor.cpp \
+            qcommutator.cpp
+
 
 HEADERS  += mainwindow.h \
             qimagewidget.h \
@@ -31,7 +33,8 @@ HEADERS  += mainwindow.h \
             qvideoslider.h \
             qstasm.h \
             qeasyplot.h \
-            qopencvprocessor.h
+            qopencvprocessor.h \
+            qcommutator.h
 
 FORMS    += mainwindow.ui
 
