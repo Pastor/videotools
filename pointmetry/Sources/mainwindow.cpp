@@ -18,6 +18,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
+    pt_videowriterThread->exit();
+        pt_videowriterThread->wait();
     pt_videoThread->exit();
         pt_videoThread->wait();
     pt_stasmThread->exit();
@@ -88,6 +90,12 @@ void MainWindow::createActions()
     pt_plotAct = new QAction(tr("&Plot"),this);
     pt_plotAct->setStatusTip(tr("New plot"));
     connect(pt_plotAct, SIGNAL(triggered()), this, SLOT(addPlot()));
+
+    pt_writeAct = new QAction(tr("&Write"), this);
+    pt_writeAct->setStatusTip(tr("Write processed frames to a file"));
+    pt_writeAct->setCheckable(true);
+    pt_writeAct->setChecked(false);
+    connect(pt_writeAct, SIGNAL(triggered(bool)), this, SLOT(callVideoWriteDialog(bool)));
 }
 
 void MainWindow::createMenus()
@@ -102,6 +110,9 @@ void MainWindow::createMenus()
     pt_optionsMenu->addAction(pt_selectionAct);
     pt_optionsMenu->addSeparator();
     pt_optionsMenu->addAction(pt_plotAct);
+
+    pt_writeMenu = menuBar()->addMenu(tr("&Write"));
+    pt_writeMenu->addAction(pt_writeAct);
 
     pt_helpMenu = menuBar()->addMenu(tr("&Help"));
     pt_helpMenu->addAction(pt_aboutAct);
@@ -132,9 +143,15 @@ void MainWindow::createThreads()
     connect(pt_videocapture,SIGNAL(frameUpdated(cv::Mat)), pt_stasm, SLOT(search_single(cv::Mat)), Qt::BlockingQueuedConnection);
     connect(pt_stasm, SIGNAL(landmarksUpdated(cv::Mat,float*,uint)), ui->display, SLOT(updateImage(cv::Mat,float*,uint)), Qt::BlockingQueuedConnection);
 
+    pt_videowriter = new QVideoWriter();
+    pt_videowriterThread = new QThread(this);
+    pt_videowriter->moveToThread(pt_videowriterThread);
+    connect(pt_videowriterThread, SIGNAL(finished()), pt_videowriter, SLOT(deleteLater()));
+
     pt_videoThread->start(QThread::LowPriority);
     pt_stasmThread->start(QThread::HighPriority);
     pt_opencvThread->start();
+    pt_videowriterThread->start(QThread::LowPriority);
 }
 
 void MainWindow::makeConnections()
@@ -250,4 +267,22 @@ void MainWindow::closeEvent(QCloseEvent*)
         temp->close();
     }
     disconnect(pt_videocapture,0,0,0);
+}
+
+void MainWindow::callVideoWriteDialog(bool new_session)
+{
+    if(new_session) {
+        if(m_writeDialog.exec() == QDialog::Accepted)   {
+            if(pt_videowriter->startRecordToFile(m_writeDialog.getFileName())) {
+                connect(pt_stasm, SIGNAL(landmarksUpdated(cv::Mat,float*,uint)), pt_videowriter, SLOT(updateFrame(cv::Mat,float*,uint)));
+            } else {
+                QMessageBox msg(QMessageBox::Information, tr("Info"), tr("Can not save file"), QMessageBox::Cancel);
+                msg.exec();
+            }
+        }
+    } else {
+        disconnect(pt_stasm, SIGNAL(landmarksUpdated(cv::Mat,float*,uint)), pt_videowriter, SLOT(updateFrame(cv::Mat,float*,uint)));
+        QTimer::singleShot(0, pt_videowriter, SLOT(release()));
+    }
+
 }

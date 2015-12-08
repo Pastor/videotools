@@ -9,7 +9,7 @@ QT       += core gui multimedia
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = Pointmetry
-VERSION = 1.0.0.0
+VERSION = 1.0.0.1
 TEMPLATE = app
 
 DEFINES += APP_NAME=\\\"$$TARGET\\\" \
@@ -23,7 +23,9 @@ SOURCES +=  main.cpp\
             qvideoslider.cpp \
             qstasm.cpp \
             qeasyplot.cpp \
-            qopencvprocessor.cpp
+            qopencvprocessor.cpp \
+            qvideowriter.cpp \
+            videodialog.cpp
 
 HEADERS  += mainwindow.h \
             qimagewidget.h \
@@ -31,9 +33,12 @@ HEADERS  += mainwindow.h \
             qvideoslider.h \
             qstasm.h \
             qeasyplot.h \
-            qopencvprocessor.h
+            qopencvprocessor.h \
+            qvideowriter.h \
+            videodialog.h
 
-FORMS    += mainwindow.ui
+FORMS    += mainwindow.ui \
+    videodialog.ui
 
 include(opencv.pri)
 include(opengl.pri)

@@ -4,7 +4,7 @@
 
 #include "../stasm.h"
 
-#define FACES_ROW_LENGTH 9
+#define FACES_ROW_LENGTH 12
 
 namespace stasm
 {

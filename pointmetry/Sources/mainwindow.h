@@ -13,6 +13,8 @@
 #include "qstasm.h"
 #include "qeasyplot.h"
 #include "qopencvprocessor.h"
+#include "videodialog.h"
+#include "qvideowriter.h"
 
 namespace Ui {
 class MainWindow;
@@ -32,6 +34,7 @@ private slots:
     void makeConnections();
     void callFileSelectDialog();
     void callDeviceSelectDialog();
+    void callVideoWriteDialog(bool new_session);
     void about();
     void help();
     void addPlot();
@@ -53,10 +56,12 @@ private:
     QAction *pt_imageAct;
     QAction *pt_selectionAct;
     QAction *pt_plotAct;
+    QAction *pt_writeAct;
 
     QMenu *pt_sourceMenu;
     QMenu *pt_optionsMenu;
     QMenu *pt_helpMenu;
+    QMenu *pt_writeMenu;
 
     QThread *pt_videoThread;
     QThread *pt_stasmThread;
@@ -66,6 +71,10 @@ private:
     QOpencvProcessor *pt_opencv;
 
     std::vector<QEasyPlot*> v_plots;
+
+    VideoDialog m_writeDialog;
+    QVideoWriter *pt_videowriter;
+    QThread *pt_videowriterThread;
 
     void createActions();
     void createMenus();
