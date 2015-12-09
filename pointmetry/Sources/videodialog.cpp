@@ -37,3 +37,13 @@ std::string VideoDialog::getFileName() const
 {
     return ui->filenameE->text().toStdString();
 }
+
+int VideoDialog::getCodec() const
+{
+    switch(ui->codecCB->currentIndex()) {
+        case 0:
+            return CV_FOURCC('M','P','4','2');
+        case 1:
+            return CV_FOURCC('M','J','P','G');
+    }
+}

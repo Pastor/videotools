@@ -27,4 +27,4 @@ SOURCES +=  $$STASM_PATH/stasm_lib.cpp \
 SOURCES +=  $$STASM_PATH/MOD_1/facedet.cpp \
             $$STASM_PATH/MOD_1/initasm.cpp
 
-#DEFINES += DIRECTORY_OF_FACE_DETECTOR_FILES=\\\"$${OPENCV_DIR}/../sources/data/haarcascades\\\"
+DEFINES += DIRECTORY_OF_FACE_DETECTOR_FILES=\\\"$${OPENCV_DIR}/../sources/data/haarcascades\\\"

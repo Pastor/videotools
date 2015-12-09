@@ -10,7 +10,7 @@ void QVideoWriter::updateFrame(const cv::Mat &img, float *v_landmarks, uint leng
     if(m_writer.isOpened()) {
         cv::Mat output = img.clone();
         for(uint i = 0; i < length/2; i++) {
-            cv::circle(output, cv::Point(v_landmarks[2*i], v_landmarks[2*i+1]), 2, cv::Scalar(0,255,0), 2);
+            cv::circle(output, cv::Point(v_landmarks[2*i], v_landmarks[2*i+1]), 1, cv::Scalar(0,255,0), 2);
         }
         m_writer.write(output);
     }

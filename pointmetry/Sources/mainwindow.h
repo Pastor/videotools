@@ -7,6 +7,7 @@
 #include <QAction>
 #include <QThread>
 #include <QMenu>
+#include <QProcess>
 
 #include "qimagewidget.h"
 #include "qvideocapture.h"
@@ -35,6 +36,7 @@ private slots:
     void callFileSelectDialog();
     void callDeviceSelectDialog();
     void callVideoWriteDialog(bool new_session);
+    void callDSDialog();
     void about();
     void help();
     void addPlot();
@@ -57,6 +59,7 @@ private:
     QAction *pt_selectionAct;
     QAction *pt_plotAct;
     QAction *pt_writeAct;
+    QAction *pt_dsAct;
 
     QMenu *pt_sourceMenu;
     QMenu *pt_optionsMenu;

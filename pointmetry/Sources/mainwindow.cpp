@@ -96,6 +96,10 @@ void MainWindow::createActions()
     pt_writeAct->setCheckable(true);
     pt_writeAct->setChecked(false);
     connect(pt_writeAct, SIGNAL(triggered(bool)), this, SLOT(callVideoWriteDialog(bool)));
+
+    pt_dsAct = new QAction(tr("DSdialog"), this);
+    pt_dsAct->setStatusTip(tr("Call DirectShow device settings dialog"));
+    connect(pt_dsAct, SIGNAL(triggered()), this, SLOT(callDSDialog()));
 }
 
 void MainWindow::createMenus()
@@ -103,6 +107,8 @@ void MainWindow::createMenus()
     pt_sourceMenu = menuBar()->addMenu(tr("&Source"));
     pt_sourceMenu->addAction(pt_fileAct);
     pt_sourceMenu->addAction(pt_deviceAct);
+    pt_sourceMenu->addSeparator();
+    pt_sourceMenu->addAction(pt_dsAct);
 
     pt_optionsMenu = menuBar()->addMenu(tr("&Options"));
     pt_optionsMenu->addAction(pt_numAct);
@@ -273,7 +279,7 @@ void MainWindow::callVideoWriteDialog(bool new_session)
 {
     if(new_session) {
         if(m_writeDialog.exec() == QDialog::Accepted)   {
-            if(pt_videowriter->startRecordToFile(m_writeDialog.getFileName())) {
+            if(pt_videowriter->startRecordToFile(m_writeDialog.getFileName(), m_writeDialog.getCodec(), 25.0, pt_videocapture->getFrameSize())) {
                 connect(pt_stasm, SIGNAL(landmarksUpdated(cv::Mat,float*,uint)), pt_videowriter, SLOT(updateFrame(cv::Mat,float*,uint)));
             } else {
                 QMessageBox msg(QMessageBox::Information, tr("Info"), tr("Can not save file"), QMessageBox::Cancel);
@@ -285,4 +291,10 @@ void MainWindow::callVideoWriteDialog(bool new_session)
         QTimer::singleShot(0, pt_videowriter, SLOT(release()));
     }
 
+}
+
+void MainWindow::callDSDialog()
+{
+    if( !QProcess::startDetached("WVCF_utility.exe", QStringList("-l -c")) );
+        QMessageBox::information(this, tr("Info"), tr("Can not open utility!"));
 }

@@ -509,3 +509,14 @@ void QVideoCapture::speedDown()
 {
     pt_timer->setInterval(pt_timer->interval() * 2);
 }
+
+cv::Size QVideoCapture::getFrameSize()
+{
+    if(m_cvCapture.isOpened())
+    {
+        int width = (int)m_cvCapture.get(CV_CAP_PROP_FRAME_WIDTH);
+        int height = (int)m_cvCapture.get(CV_CAP_PROP_FRAME_HEIGHT);
+        return cv::Size(width, height);
+    }
+    return cv::Size(0,0);
+}

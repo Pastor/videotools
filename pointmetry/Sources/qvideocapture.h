@@ -53,7 +53,7 @@ class provides some GUI interface to cv::VideoCapture::set(...) function.
 #define MAX_EXPOSURE -1
 #define DEFAULT_EXPOSURE -5
 
-#define DEFAULT_FRAME_PERIOD 5
+#define DEFAULT_FRAME_PERIOD 35
 //--------------------------------------------------------------------------------------------------
 
 class QVideoCapture : public QObject
@@ -89,7 +89,7 @@ public slots:
     bool resume();                          // starts the grabbing with determined period of time in ms
     bool close();                           // stops the grabbing and closes video file or capturing device
     bool pause();                           // stops the frametimer
-    int open_deviceSelectDialog();          // On success it should return device id for opendevice(...) function, thus you should use it in than way: class_instance->opendevice( device_select_dialog(), some_value )
+    int  open_deviceSelectDialog();          // On success it should return device id for opendevice(...) function, thus you should use it in than way: class_instance->opendevice( device_select_dialog(), some_value )
     bool open_resolutionDialog();           // creates an QDialog instance with video device resolution-controls, should be used as a GUI implementation of the camera controll functions
     bool open_settingsDialog();             // creates an QDialog instance with video device characteristic-controls, should be used as a GUI implementation of the camera controll functions
     //------------------------------------------
@@ -103,12 +103,13 @@ public slots:
     bool set_white_balanceV(int value);
     void set_default_settings();
     bool setPosition(int pos);
-    int getFramesCount();
+    int  getFramesCount();
     void stepBackward();
     void stepForward();
     //------------------------------------------
     void speedUp();
     void speedDown();
+    cv::Size getFrameSize();
 
 private:
     cv::VideoCapture m_cvCapture;           // an OpenCV's object for video capturing from video files or cameras

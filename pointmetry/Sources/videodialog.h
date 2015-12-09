@@ -2,6 +2,7 @@
 #define VIDEODIALOG_H
 
 #include <QDialog>
+#include "opencv2/opencv.hpp"
 
 namespace Ui {
 class VideoDialog;
@@ -16,6 +17,7 @@ public:
     ~VideoDialog();
 
     std::string getFileName() const;
+    int getCodec() const;
 
 private slots:
     void on_acceptB_clicked();

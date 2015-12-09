@@ -4,7 +4,7 @@
 
 #include "../stasm.h"
 
-#define FACES_ROW_LENGTH 12
+#define FACES_ROW_LENGTH 9
 
 namespace stasm
 {
@@ -16,7 +16,7 @@ static const double BORDER_FRAC = .1; // fraction of image width or height
                                       // use 0.0 for no border
 
 //-------------------------------------------------------------------------------
-static cv::Rect face_rect;                    // stores Rect of last face found
+static cv::Rect face_rect(0,0,0,0);                    // stores Rect of last face found
 static cv::Rect v_face[FACES_ROW_LENGTH];   // accumulates Rect of faces
 static int m_pos = 0;
 bool first_search = true;
@@ -101,7 +101,7 @@ void DetectFaces(          // all face rects into detpars
     // the params below are accurate but slow
     static const double SCALE_FACTOR   = 1.1;
     static const int    MIN_NEIGHBORS  = 3;
-    static const int    DETECTOR_FLAGS = cv::CASCADE_FIND_BIGGEST_OBJECT;
+    static const int    DETECTOR_FLAGS = 0;
 
     cv::Rect rect_to_search(face_rect.x - face_rect.width / 2,
                             face_rect.y - face_rect.height / 2,
@@ -115,14 +115,14 @@ void DetectFaces(          // all face rects into detpars
     if(facerects.size() != 0)   {
         if(first_search)    {
             first_search = false;
-            fill_average_face_rect(facerects[0]);
+            fill_average_face_rect(cv::Rect(0, 0, img.cols, img.rows));
         }
         update_average_face_rect(facerects[0]);
         face_rect = facerects[0];
         row_without_face = 0;
     } else {
         row_without_face++;
-        if(row_without_face == FACES_ROW_LENGTH)
+        if(row_without_face >= FACES_ROW_LENGTH)
             face_rect = cv::Rect(0, 0, img.cols, img.rows);
     }
     // copy face rects into the detpars vector
@@ -130,13 +130,13 @@ void DetectFaces(          // all face rects into detpars
     detpars.resize(NSIZE(facerects));
         for (int i = 0; i < NSIZE(facerects); i++)
         {
-            Rect facerect =  get_average_face_rect();
+            Rect rect =  get_average_face_rect();
             DetPar detpar; // detpar constructor sets all fields INVALID
             // detpar.x and detpar.y is the center of the face rectangle
-            detpar.x = facerect.x + facerect.width / 2.;
-            detpar.y = facerect.y + facerect.height / 2.;
-            detpar.width  = double(facerect.width);
-            detpar.height = double(facerect.height);
+            detpar.x = rect.x + rect.width / 2.;
+            detpar.y = rect.y + rect.height / 2.;
+            detpar.width  = double(rect.width);
+            detpar.height = double(rect.height);
             detpar.yaw = 0; // assume face has no yaw in this version of Stasm
             detpar.eyaw = EYAW00;
             detpars[i] = detpar;

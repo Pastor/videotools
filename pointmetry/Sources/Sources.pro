@@ -8,7 +8,7 @@ QT       += core gui multimedia
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = Pointmetry
+TARGET = Pointmetry_fastStasm
 VERSION = 1.0.0.1
 TEMPLATE = app
 
