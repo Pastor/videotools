@@ -2,21 +2,21 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Pointmetry"
-#define MyAppVersion "1.0.0.1"
+#define MyAppVersion "1.0.1"
 #define MyAppPublisher "NIICBT"
 #define MyAppURL "http://biometric.bmstu.ru"
-#define MyAppExeNameFirst "Pointmetry_stasm.exe"
-#define MyAppExeNameSecond "Pointmetry_fastStasm.exe"
+#define MyAppExeNameFirst "PointmetryOS.exe"
+#define MyAppExeNameSecond "PointmetryFS.exe"
 
-#define OpencvBinPath "C:\opencv300\build\x86\vc10\bin"
-#define QtBinPath "C:\Qt\5.4\msvc2010_opengl\bin"
+#define OpencvBinPath "C:\Programming\3rdParties\opencv300\build\x86\vc12\bin"
+#define QtBinPath "C:\Qt\5.5\msvc2013\bin"
 #define stasmPath "C:\Programming\videotools\3rdparty\stasm"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
 ; Do not use the same AppId value in installers for other applications.
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
-AppId={{A972E62E-8723-46AC-9061-799D4B4F1B22}
+AppId={{558AE321-1A7B-41FF-A6B8-996FB24D28C2}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 ;AppVerName={#MyAppName} {#MyAppVersion}
@@ -39,8 +39,8 @@ Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
 ;Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "C:\Programming\videotools\pointmetry\Install\build-Sources-Desktop_Qt_5_4_MSVC2010_OpenGL_32bit-Release\release\Pointmetry_fastStasm.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Programming\videotools\pointmetry\Install\build-Sources-Desktop_Qt_5_4_MSVC2010_OpenGL_32bit-Release\release\Pointmetry_stasm.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "C:\Programming\videotools\pointmetry\Install\build-Sources-Desktop_Qt_5_5_1_MSVC2013_32bit-Release\release\{#MyAppExeNameFirst}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "C:\Programming\videotools\pointmetry\Install\build-Sources-Desktop_Qt_5_5_1_MSVC2013_32bit-Release\release\{#MyAppExeNameSecond}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#OpencvBinPath}\opencv_core300.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#OpencvBinPath}\opencv_ffmpeg300.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#OpencvBinPath}\opencv_highgui300.dll"; DestDir: "{app}"; Flags: ignoreversion
@@ -50,9 +50,9 @@ Source: "{#OpencvBinPath}\opencv_videoio300.dll"; DestDir: "{app}"; Flags: ignor
 Source: "{#OpencvBinPath}\opencv_ml300.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#OpencvBinPath}\opencv_imgcodecs300.dll"; DestDir: "{app}"; Flags: ignoreversion
 
-Source: "{#QtBinPath}\icudt53.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#QtBinPath}\icuin53.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#QtBinPath}\icuuc53.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#QtBinPath}\icudt54.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#QtBinPath}\icuin54.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#QtBinPath}\icuuc54.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#QtBinPath}\enginio.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#QtBinPath}\Qt5Concurrent.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#QtBinPath}\Qt5Core.dll"; DestDir: "{app}"; Flags: ignoreversion
@@ -69,12 +69,12 @@ Source: "{#QtBinPath}\..\plugins\mediaservice\dsengine.dll"; DestDir: "{app}\med
 Source: "{#QtBinPath}\..\plugins\mediaservice\qtmedia_audioengine.dll"; DestDir: "{app}\mediaservice"; Flags: ignoreversion
 Source: "{#QtBinPath}\..\plugins\mediaservice\wmfengine.dll"; DestDir: "{app}\mediaservice"; Flags: ignoreversion
 
-Source: "C:\opencv300\sources\data\haarcascades\haarcascade_frontalface_alt2.xml"; DestDir: "{app}\data"; Flags: ignoreversion
+Source: "{#OpencvBinPath}\..\..\..\..\sources\data\haarcascades\haarcascade_frontalface_alt2.xml"; DestDir: "{app}\data"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
-Name: "{group}\{#MyAppName}\Stasm"; Filename: "{app}\{#MyAppExeNameFirst}"
-Name: "{group}\{#MyAppName}\fastStasm"; Filename: "{app}\{#MyAppExeNameSecond}"
+Name: "{group}\{#MyAppName}\Origin"; Filename: "{app}\{#MyAppExeNameFirst}"
+Name: "{group}\{#MyAppName}\Fast"; Filename: "{app}\{#MyAppExeNameSecond}"
 Name: "{group}\{cm:ProgramOnTheWeb,{#MyAppName}}"; Filename: "{#MyAppURL}"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 ;Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon

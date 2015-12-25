@@ -16,16 +16,10 @@ static const double BORDER_FRAC = .1; // fraction of image width or height
                                       // use 0.0 for no border
 
 //-------------------------------------------------------------------------------
-static cv::Rect face_rect(0,0,0,0);                    // stores Rect of last face found
+static cv::Rect face_rect(0,0,0,0);                  // stores Rect of last face found
 static cv::Rect v_face[FACES_ROW_LENGTH];   // accumulates Rect of faces
 static int m_pos = 0;
-bool first_search = true;
-uint row_without_face = 0;
-void fill_average_face_rect(const cv::Rect &rect)
-{
-    for(uint i = 0; i < FACES_ROW_LENGTH; i++)
-        v_face[i] = rect;
-}
+uint row_without_face_counter = 0;
 
 cv::Rect get_average_face_rect()
 {
@@ -59,6 +53,7 @@ void FaceDet::OpenFaceDetector_( // called by stasm_init, init face det from XML
     void*)                       // in: unused (func signature compatibility)
 {
     OpenDetector(facedet_g, "haarcascade_frontalface_alt2.xml",  datadir);
+    //OpenDetector(facedet_g, "lbpcascade_frontalface.xml",  datadir);
 }
 
 // If a face is near the edge of the image, the OpenCV detectors tend to
@@ -101,7 +96,7 @@ void DetectFaces(          // all face rects into detpars
     // the params below are accurate but slow
     static const double SCALE_FACTOR   = 1.1;
     static const int    MIN_NEIGHBORS  = 3;
-    static const int    DETECTOR_FLAGS = 0;
+    static const int    DETECTOR_FLAGS = cv::CASCADE_FIND_BIGGEST_OBJECT;
 
     cv::Rect rect_to_search(face_rect.x - face_rect.width / 2,
                             face_rect.y - face_rect.height / 2,
@@ -113,16 +108,12 @@ void DetectFaces(          // all face rects into detpars
                SCALE_FACTOR, MIN_NEIGHBORS, DETECTOR_FLAGS, minpix);
 
     if(facerects.size() != 0)   {
-        if(first_search)    {
-            first_search = false;
-            fill_average_face_rect(cv::Rect(0, 0, img.cols, img.rows));
-        }
         update_average_face_rect(facerects[0]);
         face_rect = facerects[0];
-        row_without_face = 0;
+        row_without_face_counter = 0;
     } else {
-        row_without_face++;
-        if(row_without_face >= FACES_ROW_LENGTH)
+        row_without_face_counter++;
+        if(row_without_face_counter >= FACES_ROW_LENGTH)
             face_rect = cv::Rect(0, 0, img.cols, img.rows);
     }
     // copy face rects into the detpars vector

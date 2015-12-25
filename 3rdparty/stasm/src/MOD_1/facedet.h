@@ -47,5 +47,7 @@ private:
 
 }; // end class FaceDet
 
+cv::Rect getRect();
+
 } // namespace stasm
 #endif // STASM_FACEDET.H

@@ -282,6 +282,7 @@ void MainWindow::callVideoWriteDialog(bool new_session)
             if(pt_videowriter->startRecordToFile(m_writeDialog.getFileName(), m_writeDialog.getCodec(), 25.0, pt_videocapture->getFrameSize())) {
                 connect(pt_stasm, SIGNAL(landmarksUpdated(cv::Mat,float*,uint)), pt_videowriter, SLOT(updateFrame(cv::Mat,float*,uint)));
             } else {
+                pt_writeAct->setChecked(false);
                 QMessageBox msg(QMessageBox::Information, tr("Info"), tr("Can not save file"), QMessageBox::Cancel);
                 msg.exec();
             }

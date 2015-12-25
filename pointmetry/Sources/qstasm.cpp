@@ -4,9 +4,9 @@ QStasm::QStasm(QObject *parent) :
     QObject(parent)
 {
     #ifdef DIRECTORY_OF_FACE_DETECTOR_FILES
-    stasm_init( QString(DIRECTORY_OF_FACE_DETECTOR_FILES).toUtf8().data() , 0);
+        stasm_init( QString(DIRECTORY_OF_FACE_DETECTOR_FILES).toUtf8().data() , 0);
     #else
-    stasm_init( "data/" , 0);
+        stasm_init( "data/" , 0);
     #endif
 }
 

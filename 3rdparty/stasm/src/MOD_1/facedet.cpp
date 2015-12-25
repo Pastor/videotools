@@ -21,6 +21,12 @@ static const double BORDER_FRAC = .1; // fraction of image width or height
                                       // use 0.0 for no border
 
 //-----------------------------------------------------------------------------
+cv::Rect faceRect(0,0,0,0);
+cv::Rect getRect()
+{
+    return faceRect;
+}
+//-----------------------------------------------------------------------------
 
 void FaceDet::OpenFaceDetector_( // called by stasm_init, init face det from XML file
     const char* datadir,         // in: directory of face detector files
@@ -80,6 +86,7 @@ void DetectFaces(          // all face rects into detpars
                SCALE_FACTOR, MIN_NEIGHBORS, DETECTOR_FLAGS, minpix);
 
     // copy face rects into the detpars vector
+    faceRect = facerects[0] - cv::Point(leftborder, topborder);
 
     detpars.resize(NSIZE(facerects));
     for (int i = 0; i < NSIZE(facerects); i++)
