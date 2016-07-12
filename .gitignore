@@ -1,0 +1,9 @@
+.vs
+.build
+*.db
+*.opendb
+*.obj
+*.lnk
+ipch
+Debug
+*.log
