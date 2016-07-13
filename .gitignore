@@ -7,3 +7,5 @@
 ipch
 Debug
 *.log
+.install
+Release

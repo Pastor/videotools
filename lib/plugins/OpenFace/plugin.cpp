@@ -46,12 +46,12 @@ __Get(struct ProcessContext **pCtx)
 static __inline void
 __InitContext(struct ProcessContext *ctx)
 {
-//    char buffer[256];
-//    auto pid = GetCurrentProcessId();
-//
-//    wsprintfA(buffer, "openface.%05d.log", pid);
-//    ctx->logger = new Logger(buffer);
-//    ctx->logger->printf("START");
+    //    char buffer[256];
+    //    auto pid = GetCurrentProcessId();
+    //
+    //    wsprintfA(buffer, "openface.%05d.log", pid);
+    //    ctx->logger = new Logger(buffer);
+    //    ctx->logger->printf("START");
 }
 
 static __inline void
@@ -74,76 +74,113 @@ __DestroyContext(struct ProcessContext *ctx)
 }
 
 static void
-NonOverlapingDetections(const vector<LandmarkDetector::CLNF>& clnf_models, vector<cv::Rect_<double> >& face_detections)
+write_ldots(FILE *fd, const cv::Mat_<double>& shape2D)
 {
-
-    for (size_t model = 0; model < clnf_models.size(); ++model) {
-        auto clnf = clnf_models[model];
-        if (clnf.detected_landmarks.rows == 0)
-            continue;
-        auto model_rect = clnf.GetBoundingBox();
-        for (int detection = face_detections.size() - 1; detection >= 0; --detection) {
-            auto intersection_area = (model_rect & face_detections[detection]).area();
-            auto union_area = model_rect.area() + face_detections[detection].area() - 2 * intersection_area;
-            if (intersection_area / union_area > 0.5) {
-                face_detections.erase(face_detections.begin() + detection);
-            }
-        }
+    auto n = shape2D.rows / 2;
+    for (auto i = 0; i < n; ++i) {
+        cv::Point featurePoint(static_cast<int>(shape2D.at<double>(i)), static_cast<int>(shape2D.at<double>(i + n)));
+        fprintf(fd, ";%05d;%05d", featurePoint.x, featurePoint.y);
     }
 }
 
-double fps_tracker = -1.0;
-int64 t0 = 0;
+static cv::Point3f
+GetPupilPosition(cv::Mat_<double> eyeLdmks3d)
+{
+
+    eyeLdmks3d = eyeLdmks3d.t();
+
+    cv::Mat_<double> irisLdmks3d = eyeLdmks3d.rowRange(0, 8);
+
+    cv::Point3f p(mean(irisLdmks3d.col(0))[0], mean(irisLdmks3d.col(1))[0], mean(irisLdmks3d.col(2))[0]);
+    return p;
+}
+
+static void
+write_gaze(FILE *fd, cv::Mat img, const LandmarkDetector::CLNF& clnf_model, cv::Point3f gazeVecAxisLeft, cv::Point3f gazeVecAxisRight, float fx, float fy, float cx, float cy)
+{
+
+    cv::Mat cameraMat = (cv::Mat_<double>(3, 3) << fx, 0, cx, 0, fy, cy, 0, 0, 0);
+
+    auto part_left = -1;
+    auto part_right = -1;
+    for (size_t i = 0; i < clnf_model.hierarchical_models.size(); ++i) {
+        if (clnf_model.hierarchical_model_names[i].compare("left_eye_28") == 0) {
+            part_left = i;
+        }
+        if (clnf_model.hierarchical_model_names[i].compare("right_eye_28") == 0) {
+            part_right = i;
+        }
+    }
+
+    cv::Mat eyeLdmks3d_left = clnf_model.hierarchical_models[part_left].GetShape(fx, fy, cx, cy);
+    auto pupil_left = GetPupilPosition(eyeLdmks3d_left);
+
+    cv::Mat eyeLdmks3d_right = clnf_model.hierarchical_models[part_right].GetShape(fx, fy, cx, cy);
+    auto pupil_right = GetPupilPosition(eyeLdmks3d_right);
+
+    vector<cv::Point3d> points_left;
+    points_left.push_back(cv::Point3d(pupil_left));
+    points_left.push_back(cv::Point3d(pupil_left + gazeVecAxisLeft*50.0));
+
+    vector<cv::Point3d> points_right;
+    points_right.push_back(cv::Point3d(pupil_right));
+    points_right.push_back(cv::Point3d(pupil_right + gazeVecAxisRight*50.0));
+
+    cv::Mat_<double> proj_points;
+    cv::Mat_<double> mesh_0 = (cv::Mat_<double>(2, 3) << points_left[0].x, points_left[0].y, points_left[0].z, points_left[1].x, points_left[1].y, points_left[1].z);
+    LandmarkDetector::Project(proj_points, mesh_0, fx, fy, cx, cy);
+//    line(img, cv::Point(proj_points.at<double>(0, 0), proj_points.at<double>(0, 1)), cv::Point(proj_points.at<double>(1, 0), proj_points.at<double>(1, 1)), cv::Scalar(110, 220, 0), 2, 8);
+    fprintf(fd, ";%05d;%05d", static_cast<int>(proj_points.at<double>(0, 0)), static_cast<int>(proj_points.at<double>(0, 1)));
+    fprintf(fd, ";%05d;%05d", static_cast<int>(proj_points.at<double>(1, 0)), static_cast<int>(proj_points.at<double>(1, 1)));
+
+    cv::Mat_<double> mesh_1 = (cv::Mat_<double>(2, 3) << points_right[0].x, points_right[0].y, points_right[0].z, points_right[1].x, points_right[1].y, points_right[1].z);
+    LandmarkDetector::Project(proj_points, mesh_1, fx, fy, cx, cy);
+//    line(img, cv::Point(proj_points.at<double>(0, 0), proj_points.at<double>(0, 1)), cv::Point(proj_points.at<double>(1, 0), proj_points.at<double>(1, 1)), cv::Scalar(110, 220, 0), 2, 8);
+    fprintf(fd, ";%05d;%05d", static_cast<int>(proj_points.at<double>(0, 0)), static_cast<int>(proj_points.at<double>(0, 1)));
+    fprintf(fd, ";%05d;%05d", static_cast<int>(proj_points.at<double>(1, 0)), static_cast<int>(proj_points.at<double>(1, 1)));
+}
+
 void
-write_result(cv::Mat& captured_image,
+write_result(
+    FILE *fd,
+    int frame,
+    cv::Mat& captured_image,
     cv::Mat_<float>& depth_image,
     const LandmarkDetector::CLNF& face_model,
     const LandmarkDetector::FaceModelParameters& det_parameters,
     cv::Point3f gazeDirection0,
     cv::Point3f gazeDirection1,
-    int frame_count,
     double fx,
     double fy,
     double cx,
     double cy)
 {
 
-    // Drawing the facial landmarks on the face and the bounding box around it if tracking is successful and initialised
     auto detection_certainty = face_model.detection_certainty;
     auto detection_success = face_model.detection_success;
-
     auto visualisation_boundary = 0.2;
-
-    // Only draw if the reliability is reasonable, the value is slightly ad-hoc
     if (detection_certainty < visualisation_boundary) {
-        LandmarkDetector::Draw(captured_image, face_model);
+        fprintf(fd, "%05d", frame);
+        write_ldots(fd, face_model.detected_landmarks);
+//        LandmarkDetector::Draw(captured_image, face_model);
 
-        auto vis_certainty = detection_certainty;
-        if (vis_certainty > 1)
-            vis_certainty = 1;
-        if (vis_certainty < -1)
-            vis_certainty = -1;
+//        auto vis_certainty = detection_certainty;
+//        if (vis_certainty > 1)
+//            vis_certainty = 1;
+//        if (vis_certainty < -1)
+//            vis_certainty = -1;
 
-        vis_certainty = (vis_certainty + 1) / (visualisation_boundary + 1);
+//        vis_certainty = (vis_certainty + 1) / (visualisation_boundary + 1);
 
-        // A rough heuristic for box around the face width
-        int thickness = static_cast<int>(std::ceil(2.0* static_cast<double>(captured_image.cols) / 640.0));
-
-        cv::Vec6d pose_estimate_to_draw = LandmarkDetector::GetCorrectedPoseWorld(face_model, fx, fy, cx, cy);
-
-        // Draw it in reddish if uncertain, blueish if certain
-        LandmarkDetector::DrawBox(captured_image, pose_estimate_to_draw, cv::Scalar((1 - vis_certainty)*255.0, 0, vis_certainty * 255), thickness, fx, fy, cx, cy);
+//        auto thickness = static_cast<int>(std::ceil(2.0* static_cast<double>(captured_image.cols) / 640.0));
+//        auto pose_estimate_to_draw = LandmarkDetector::GetCorrectedPoseWorld(face_model, fx, fy, cx, cy);
+//        LandmarkDetector::DrawBox(captured_image, pose_estimate_to_draw, cv::Scalar((1 - vis_certainty)*255.0, 0, vis_certainty * 255), thickness, fx, fy, cx, cy);
 
         if (det_parameters.track_gaze && detection_success && face_model.eye_model) {
-            FaceAnalysis::DrawGaze(captured_image, face_model, gazeDirection0, gazeDirection1, fx, fy, cx, cy);
+//            FaceAnalysis::DrawGaze(captured_image, face_model, gazeDirection0, gazeDirection1, fx, fy, cx, cy);
+            write_gaze(fd, captured_image, face_model, gazeDirection0, gazeDirection1, fx, fy, cx, cy);
         }
-    }
-
-    // Work out the framerate
-    if (frame_count % 10 == 0) {
-        double t1 = cv::getTickCount();
-        fps_tracker = 10.0 / (double(t1 - t0) / cv::getTickFrequency());
-        t0 = t1;
+        fprintf(fd, "\r\n");
     }
 }
 
@@ -154,7 +191,7 @@ StartProcess(VideoPluginContext *ctx)
     struct ProcessContext *pctx;
     auto it = 0;
     DWORD dwAllTime = 0;
-    auto ldots = std::toString(ctx->pFileTemplate) + xstring(TEXT(".ldots"));
+    auto ldots = std::string(ctx->pFileTemplate) + std::string(".ldots");
     auto wdots = std::toString(ctx->pFileTemplate) + xstring(TEXT(".avi"));
     auto startProcess = timeGetTime();
     __Get(&pctx);
@@ -188,13 +225,19 @@ StartProcess(VideoPluginContext *ctx)
     }
     double fps = 10;
     SendMessage(ctx->hwnd, WM_FRAME_STATUS, NULL, (LONG_PTR)TEXT("Обработка..."));
+    auto fd = fopen(ldots.c_str(), "w");
+    fprintf(fd, "FRAME");
+    for (auto i = 0; i < 68; ++i) {
+        fprintf(fd, ";DOT_X%02d;DOT_Y%02d", i + 1, i + 1);
+    }
+    fprintf(fd, ";GAZELS_X;GAZELS_Y;GAZELE_X;GAZELE_Y;GAZERS_X;GAZERS_Y;GAZERE_X;GAZERE_Y");
     while (it < ctx->iFrameCount && *ctx->is_processing) {
         if (it > 0)
             fi.iProcessPercent = (it * 100) / ctx->iFrameCount;
         fi.iFrame = it;
         fi.iQuality = 0;
         auto start = timeGetTime();
-        {
+        if (captured_image.cols > 0) {
             cv::Mat_<float> depth_image;
             cv::Mat_<uchar> grayscale_image;
             auto disp_image = captured_image.clone();
@@ -222,7 +265,7 @@ StartProcess(VideoPluginContext *ctx)
                 FaceAnalysis::EstimateGaze(clnf_model, gazeDirection1, fx, fy, cx, cy, false);
             }
             if (detection_success)
-                write_result(captured_image, depth_image, clnf_model, det_params, gazeDirection0, gazeDirection1, it, fx, fy, cx, cy);
+                write_result(fd, it, captured_image, depth_image, clnf_model, det_params, gazeDirection0, gazeDirection1, fx, fy, cx, cy);
             video_capture >> captured_image;
 
         }
@@ -232,6 +275,7 @@ StartProcess(VideoPluginContext *ctx)
         SendMessage(ctx->hwnd, WM_FRAME_NEXT, 0, reinterpret_cast<LPARAM>(&fi));
         ++it;
     }
+    fclose(fd);
     clnf_model.Reset();
     return TRUE;
 }
