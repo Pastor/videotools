@@ -230,7 +230,7 @@ StartProcess(VideoPluginContext *ctx)
     for (auto i = 0; i < 68; ++i) {
         fprintf(fd, ";DOT_X%02d;DOT_Y%02d", i + 1, i + 1);
     }
-    fprintf(fd, ";GAZELS_X;GAZELS_Y;GAZELE_X;GAZELE_Y;GAZERS_X;GAZERS_Y;GAZERE_X;GAZERE_Y");
+    fprintf(fd, ";GAZELS_X;GAZELS_Y;GAZELE_X;GAZELE_Y;GAZERS_X;GAZERS_Y;GAZERE_X;GAZERE_Y\r\n");
     while (it < ctx->iFrameCount && *ctx->is_processing) {
         if (it > 0)
             fi.iProcessPercent = (it * 100) / ctx->iFrameCount;

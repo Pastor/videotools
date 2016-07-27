@@ -21,3 +21,5 @@ accumulate
 Release
 *.sdf
 *.v12.suo
+!lib/3rdParty/boost/boost/preprocessor/debug
+*.aps

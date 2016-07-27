@@ -64,11 +64,11 @@ namespace Internal {
     private:
         bool   create();
         void   clear_error();
-        wchar_t *alloc(const char * const szBuffer);
-        char    *alloc(const wchar_t * const szBuffer);
-        char    *toString(const wchar_t * const szBuffer);
-        wchar_t *toString(const char * const szBuffer);
-        void   free(LPVOID pMemory);
+        wchar_t *alloc(const char * const szBuffer) const;
+        char    *alloc(const wchar_t * const szBuffer) const;
+        char    *toString(const wchar_t * const szBuffer) const;
+        wchar_t *toString(const char * const szBuffer) const;
+        void   free(LPVOID pMemory) const;
 
         sqlite3      *db;
         char         *error;
@@ -258,7 +258,7 @@ namespace Internal {
         return ret == SQLITE_DONE;
     }
 
-    char    *PropertiesPrivate::toString(const wchar_t * const szValue)
+    char    *PropertiesPrivate::toString(const wchar_t * const szValue) const
     {
         char *szBuffer;
         int   ret;
@@ -276,7 +276,7 @@ namespace Internal {
         return szBuffer;
     }
 
-    wchar_t *PropertiesPrivate::toString(const char * const szValue)
+    wchar_t *PropertiesPrivate::toString(const char * const szValue) const
     {
         int ret;
         wchar_t *szBuffer;
@@ -329,18 +329,18 @@ namespace Internal {
         return result;
     }
 
-    void PropertiesPrivate::free(LPVOID pMemory)
+    void PropertiesPrivate::free(LPVOID pMemory) const
     {
         if (pMemory != nullptr)
             HeapFree(hHeap, HEAP_NO_SERIALIZE, pMemory);
     }
 
-    wchar_t * PropertiesPrivate::alloc(const char * const szBuffer)
+    wchar_t * PropertiesPrivate::alloc(const char * const szBuffer) const
     {
         return static_cast<wchar_t *>(HeapAlloc(hHeap, HEAP_ZERO_MEMORY | HEAP_NO_SERIALIZE, (std::strlen(szBuffer) + 100) * sizeof(wchar_t)));
     }
 
-    char * PropertiesPrivate::alloc(const wchar_t * const szBuffer)
+    char * PropertiesPrivate::alloc(const wchar_t * const szBuffer) const
     {
         return static_cast<char *>(HeapAlloc(hHeap, HEAP_ZERO_MEMORY | HEAP_NO_SERIALIZE, (std::wcslen(szBuffer) + 100) * sizeof(wchar_t)));
     }
@@ -365,7 +365,7 @@ Properties::~Properties()
 }
 
 std::string 
-Properties::getString(const char* const szKey, const char* const szDefault)
+Properties::getString(const char* const szKey, const char* const szDefault) const
 {
     std::lock_guard<std::mutex> locker(d->mutex);
     auto ret = d->properties[szKey];// d->getString(szKey);
@@ -373,7 +373,7 @@ Properties::getString(const char* const szKey, const char* const szDefault)
 }
 
 std::wstring 
-Properties::getWString(const char* const szKey, const wchar_t* const szDefault)
+Properties::getWString(const char* const szKey, const wchar_t* const szDefault) const
 {
 //    std::lock_guard<std::mutex> locker(d->mutex);
     auto ret = d->getWString(szKey);
@@ -381,15 +381,16 @@ Properties::getWString(const char* const szKey, const wchar_t* const szDefault)
 }
 
 void 
-Properties::setString(const char* const szKey, const char* const szValue)
+Properties::setString(const char* const szKey, const char* const szValue) const
 {
 //    std::lock_guard<std::mutex> locker(d->mutex);
     if (!d->add(szKey, szValue))
         d->update(szKey, szValue);
+    d->properties[szKey] = szValue;
 }
 
 void 
-Properties::setString(const char* const szKey, const wchar_t* const szValue)
+Properties::setString(const char* const szKey, const wchar_t* const szValue) const
 {
 //    std::lock_guard<std::mutex> locker(d->mutex);
     if (!d->add(szKey, szValue))
@@ -397,7 +398,7 @@ Properties::setString(const char* const szKey, const wchar_t* const szValue)
 }
 
 int 
-Properties::getInteger(const char* const szKey, int iDefault)
+Properties::getInteger(const char* const szKey, int iDefault) const
 {
 //    std::lock_guard<std::mutex> locker(d->mutex);
     std::string::size_type sz;
@@ -406,7 +407,7 @@ Properties::getInteger(const char* const szKey, int iDefault)
 }
 
 float 
-Properties::getFloat(const char* const szKey, float fDefault)
+Properties::getFloat(const char* const szKey, float fDefault) const
 {
     std::string::size_type sz;
     auto ret = getString(szKey);
@@ -414,7 +415,7 @@ Properties::getFloat(const char* const szKey, float fDefault)
 }
 
 bool 
-Properties::getBoolean(const char* const szKey, bool bDefaut)
+Properties::getBoolean(const char* const szKey, bool bDefaut) const
 {
 //    std::lock_guard<std::mutex> locker(d->mutex);
     auto ret = getString(szKey);
@@ -422,7 +423,7 @@ Properties::getBoolean(const char* const szKey, bool bDefaut)
 }
 
 void 
-Properties::setInteger(const char* const szKey, int iValue)
+Properties::setInteger(const char* const szKey, int iValue) const
 {
 //    std::lock_guard<std::mutex> locker(d->mutex);
     auto value = std::to_string(iValue);
@@ -431,7 +432,7 @@ Properties::setInteger(const char* const szKey, int iValue)
 }
 
 void 
-Properties::setBoolean(const char* const szKey, bool bValue)
+Properties::setBoolean(const char* const szKey, bool bValue) const
 {
     std::lock_guard<std::mutex> locker(d->mutex);
     auto value = bValue ? "true" : "false";
