@@ -1,37 +1,11 @@
-Release
-Debug
-*.sdf
-*.opensdf
-*.suo
-*.aps
-*.slo
-*.lo
-*.o
+.vs
+.build
+*.db
+*.opendb
 *.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-#*.dll
-
-# Fortran module files
-*.mod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-#*.lib
-
-# Executables
-#*.exe
-*.out
-*.app
-
+*.lnk
+ipch
+Debug
 *.log
 .Temporary
 .vc
@@ -43,3 +17,7 @@ Qtdesigner
 *.pro.user
 seriesanalysis/cmdutility/Install
 accumulate
+.install
+Release
+*.sdf
+*.v12.suo
