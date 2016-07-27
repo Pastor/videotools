@@ -26,8 +26,7 @@ class LoggerPrivate
 {
 public:
     LoggerPrivate()
-        : allocated(0), offset(0), event(0), szBuffer(nullptr),
-        fd(nullptr)
+        : allocated(0), offset(0), event(0), szBuffer(nullptr), fd(nullptr), showDate(true)
     {}
     bool open(const char * const szFileName)
     {
@@ -91,16 +90,25 @@ public:
         char       szBuffer[256];
 
         GetSystemTime(&s);
-        StringCchPrintfA(szBuffer, sizeof(szBuffer), "%02d.%02d.%04d %02d:%02d:%02d.%04d [%06d] ", 
-            s.wDay, 
-            s.wMonth, 
-            s.wYear,
-            
-            s.wHour,
-            s.wMinute,
-            s.wSecond,
-            s.wMilliseconds,
-            event);
+        if (showDate) {
+            StringCchPrintfA(szBuffer, sizeof(szBuffer), "%02d.%02d.%04d %02d:%02d:%02d.%04d [%06d] ",
+                s.wDay,
+                s.wMonth,
+                s.wYear,
+
+                s.wHour,
+                s.wMinute,
+                s.wSecond,
+                s.wMilliseconds,
+                event);
+        } else {
+            StringCchPrintfA(szBuffer, sizeof(szBuffer), "%02d:%02d:%02d.%04d [%06d] ",
+                s.wHour,
+                s.wMinute,
+                s.wSecond,
+                s.wMilliseconds,
+                event);
+        }        
         clear();
         add(szBuffer);
         flush();
@@ -129,11 +137,13 @@ public:
     char            *szBuffer;
     std::mutex       mutex;
     FILE            *fd;
+    bool             showDate;
 };
 
-Logger::Logger(const char* const szFileName)
+Logger::Logger(const char* const szFileName, bool showDate)
     : d(new LoggerPrivate)
 {
+    d->showDate = showDate;
     d->open(szFileName);
 }
 

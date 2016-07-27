@@ -185,10 +185,10 @@ StartProcess(VideoPluginStartContext *startContext)
         auto path = absFilePath("haarcascade_mcs_lefteye.xml");
         auto fileTemplate = std::string(startContext->pFileTemplate);
         if (ctx->logCalculator == nullptr) {
-            ctx->logCalculator = new Logger((fileTemplate + ".quality").c_str());
+            ctx->logCalculator = new Logger((fileTemplate + ".quality").c_str(), false);
         }
         if (ctx->logMetainfo == nullptr) {
-            ctx->logMetainfo = new Logger((fileTemplate + ".metainf").c_str());
+            ctx->logMetainfo = new Logger((fileTemplate + ".metainf").c_str(), false);
         }
         if (ctx->left == nullptr) {
             ctx->left = static_cast<CvHaarClassifierCascade *>(cvLoad(path.c_str()));

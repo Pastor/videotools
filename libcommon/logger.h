@@ -11,7 +11,7 @@ class Logger
 {
     std::unique_ptr<LoggerPrivate> d;
 public:
-    explicit Logger(const char * const szFileName);
+    explicit Logger(const char * const szFileName, bool showDate = true);
     ~Logger();
 
     void event();

@@ -37,8 +37,9 @@ Debug
 .vc
 .Result
 3rdparty/*.docx
-
+.DataSet
 
 Qtdesigner
 *.pro.user
 seriesanalysis/cmdutility/Install
+accumulate

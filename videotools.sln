@@ -27,6 +27,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "detectPulse", "detectPulse\
 		{0C73F5DC-36E2-442B-91F1-CCC29E772353} = {0C73F5DC-36E2-442B-91F1-CCC29E772353}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "accumulate", "accumulate\accumulate.vcxproj", "{F4BCD176-808B-4DC2-8E8A-9454C4370D72}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -53,6 +55,10 @@ Global
 		{1272B65D-9BA6-47C8-9C30-C41BD578C5A2}.Debug|Win32.Build.0 = Debug|Win32
 		{1272B65D-9BA6-47C8-9C30-C41BD578C5A2}.Release|Win32.ActiveCfg = Release|Win32
 		{1272B65D-9BA6-47C8-9C30-C41BD578C5A2}.Release|Win32.Build.0 = Release|Win32
+		{F4BCD176-808B-4DC2-8E8A-9454C4370D72}.Debug|Win32.ActiveCfg = Debug|Win32
+		{F4BCD176-808B-4DC2-8E8A-9454C4370D72}.Debug|Win32.Build.0 = Debug|Win32
+		{F4BCD176-808B-4DC2-8E8A-9454C4370D72}.Release|Win32.ActiveCfg = Release|Win32
+		{F4BCD176-808B-4DC2-8E8A-9454C4370D72}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <Windows.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core_c.h>
 #include <opencv2/core/types_c.h>
@@ -26,10 +27,12 @@
 class HardThread {
     enum ColorChannel { Red, Green, Blue };
 public:
-    HardThread(short lenData, short lenSize);
+    HardThread(Logger *logger, short lenData, short lenSize);
     ~HardThread();
     bool loadClassifier(const std::string &fileName);
     bool doProcess(const cv::Mat &mat, ProcessResult * result, int time);
+
+    Logger                   *m_logger;
 protected:
     bool doOpencvPart(const cv::Mat &mat, ProcessResult * result, int time);
     bool doOneColorHarmonic(unsigned long color, unsigned long area, int time, ProcessResult * result);
@@ -42,6 +45,7 @@ private:
     //    cv::CascadeClassifier m_classifier;
     CvHaarClassifierCascade  *m_classifier;
     CvMemStorage             *m_storage;
+    
     /** Harmonic */
     double               *ptCNSignal;  //a pointer to centered and normalized data (typedefinition from fftw3.h, a single precision complex float number type)
     fftw_complex         *ptSpectrum;  // a pointer to an array for FFT-spectrum
@@ -96,7 +100,7 @@ CreateSession(SessionConfig * pConfig)
     auto hSession = static_cast<struct __SessionHandle *>(calloc(1, sizeof(struct __SessionHandle)));
     hSession->magic = MAGIC_NUMBER;
     std::memcpy(&hSession->config, pConfig, sizeof(SessionConfig));
-    hSession->hard = new HardThread(256/**pConfig->iHarmonicDataSize*/, 256/*pConfig->iHarmonicBuffSize*/);
+    hSession->hard = new HardThread(pConfig->logger, 256/**pConfig->iHarmonicDataSize*/, 256/*pConfig->iHarmonicBuffSize*/);
     if (!hSession->hard->loadClassifier(pConfig->szClassifierFile)) {
         DestroySession(hSession);
         return nullptr;
@@ -128,8 +132,10 @@ ProcessSession(SessionHandle hSession, void *pImage, ProcessResult * pResult, in
     return FALSE;
 }
 
-HardThread::HardThread(short lenData, short lenSize)
-    : SNRE(-5.0),
+HardThread::HardThread(Logger *logger, short lenData, short lenSize)
+    :
+    m_logger(logger),
+    SNRE(-5.0),
     ch1_mean(0.0),
     ch2_mean(0.0),
     HRfrequency(0.0),
@@ -156,6 +162,10 @@ HardThread::HardThread(short lenData, short lenSize)
         ptData_ch2[i] = 0.0;
         ptTime[i] = 60; // just for ensurance that at the begining there will not be any "division by zero"
         ptCNSignal[i] = 0.0;
+    }
+
+    if (m_logger == nullptr) {
+        m_logger = new Logger("detectPulse.log");
     }
 }
 
@@ -203,7 +213,8 @@ HardThread::doOpencvPart(const cv::Mat & mat, ProcessResult * result, int time)
     cv::equalizeHist(gray, gray);
     std::vector<cv::Rect> faces_vector;
 
-    __Detect(m_classifier, m_storage, &static_cast<IplImage>(gray), faces_vector, nullptr, 1.1, 11, CV_HAAR_DO_ROUGH_SEARCH | CV_HAAR_FIND_BIGGEST_OBJECT, OBJECT_MINSIZE2, OBJECT_MINSIZE2);
+    auto p = &(IplImage)(gray);
+    __Detect(m_classifier, m_storage, p, faces_vector, nullptr, 1.1, 11, CV_HAAR_DO_ROUGH_SEARCH | CV_HAAR_FIND_BIGGEST_OBJECT, OBJECT_MINSIZE2, OBJECT_MINSIZE2);
     unsigned long red = 0; // an accumulator for red color channel
     unsigned long green = 0; // an accumulator for green color channel
     unsigned long blue = 0; // an accumulator for blue color channel

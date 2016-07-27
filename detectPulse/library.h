@@ -1,5 +1,6 @@
 #ifndef _LIBRARY_H_
 #define _LIBRARY_H_
+#include <logger.h>
 #include "library_global.h"
 
 #define OPTION_RGB_FLAG     0x0001
@@ -18,6 +19,7 @@ extern "C" {
         char       szClassifierFile[MAX_PATH * 4];
         short      iHarmonicDataSize;
         short      iHarmonicBuffSize;
+        Logger     *logger;
    };
    typedef struct tagSessionConfig SessionConfig;
    typedef void * SessionHandle;
