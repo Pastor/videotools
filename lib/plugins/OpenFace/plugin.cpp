@@ -177,7 +177,6 @@ write_result(
 //        LandmarkDetector::DrawBox(captured_image, pose_estimate_to_draw, cv::Scalar((1 - vis_certainty)*255.0, 0, vis_certainty * 255), thickness, fx, fy, cx, cy);
 
         if (det_parameters.track_gaze && detection_success && face_model.eye_model) {
-//            FaceAnalysis::DrawGaze(captured_image, face_model, gazeDirection0, gazeDirection1, fx, fy, cx, cy);
             write_gaze(fd, captured_image, face_model, gazeDirection0, gazeDirection1, fx, fy, cx, cy);
         }
         fprintf(fd, "\r\n");
