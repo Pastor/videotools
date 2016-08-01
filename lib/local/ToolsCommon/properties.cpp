@@ -1,6 +1,4 @@
 #include <Windows.h>
-#include <sqlite3.h>
-#include <cstring>
 #include <iostream>
 #include <fstream>
 #include <unordered_map>
@@ -9,169 +7,48 @@
 #include "properties.h"
 
 namespace Internal {
-    const char * const __p_TableScheme =
-        "CREATE TABLE IF NOT EXISTS Properties ("
-        "    id           INTEGER PRIMARY KEY AUTOINCREMENT, "
-        "    key          TEXT UNIQUE NOT NULL,              "
-        "    value        TEXT DEFAULT NULL                  "
-        ");";
-    const char * const __p_TablesInsertStmt =
-        "INSERT INTO Properties(key, value) "
-        "  VALUES(?, ?)";
-    const char * const __p_TablesUpdateStmt =
-        "UPDATE Properties SET value = ? WHERE key = ?";
-
-    const char * const __p_TablesListStmt =
-        "SELECT id, key, value FROM Properties ORDER BY key";
-    const char * const __p_TablesGetStmt =
-        "SELECT id, key, value FROM Properties WHERE key = ?";
-    const char * const __p_TablesDeleteStmt =
-        "DELETE FROM Properties";
-    const char * const __p_TablesDeleteKeyStmt =
-        "DELETE FROM Properties WHERE key = ?";
-    const char * const __p_TablesCountStmt =
-        "SELECT COUNT(id) FROM Properties";
-
-    typedef std::pair<std::string, std::string>  PropertyKey;
-    typedef std::vector<PropertyKey>             PropertyList;
-
-    class PropertiesPrivate {
+    class PropertiesPrivate final {
     public:
-        explicit PropertiesPrivate(Logger *_logger)
-            : db(nullptr), error(nullptr), ret(0), logger(_logger), 
-              hHeap(HeapCreate(HEAP_NO_SERIALIZE, 0, 0))
-        {
-            sqlite3_initialize();
-        }
+        explicit PropertiesPrivate()
+            : hHeap(HeapCreate(HEAP_NO_SERIALIZE, 0, 0))
+        {}
         ~PropertiesPrivate()
         {
             HeapDestroy(hHeap);
         }
-        bool   open();
-        bool   close();
-        bool   clear();
-        int    nextId() const;
-        int    count();
+
+        int    count() const;
 
         bool   add(const char * const szKey, const char *    const szValue);
         bool   add(const char * const szKey, const wchar_t * const szValue);
         bool   update(const char * const szKey, const char* const szValue);
         bool   update(const char * const szKey, const wchar_t* const szValue);
         bool   remove(const char * const szKey);
-        bool   list(PropertyList &list);
         std::string  getString(const char * const szKey);
         std::wstring getWString(const char * const szKey);
+        void clear();
     private:
-        bool   create();
-        void   clear_error();
         wchar_t *alloc(const char * const szBuffer) const;
         char    *alloc(const wchar_t * const szBuffer) const;
         char    *toString(const wchar_t * const szBuffer) const;
         wchar_t *toString(const char * const szBuffer) const;
         void   free(LPVOID pMemory) const;
 
-        sqlite3      *db;
-        char         *error;
-        int           ret;
-        Logger       *logger;
         HANDLE        hHeap;
         std::mutex    mutex;
         std::unordered_map<std::string, std::string> properties;
         friend class Properties;
     };
 
-    void PropertiesPrivate::clear_error()
+    int PropertiesPrivate::count() const
     {
-        if (error != nullptr)
-            sqlite3_free(error);
-        error = nullptr;
-    }
-
-    bool PropertiesPrivate::open()
-    {
-        close();
-        ret = sqlite3_open(":memory:", &db);
-        if (ret != SQLITE_OK)
-            return false;
-        return create();
-    }
-
-    bool PropertiesPrivate::close()
-    {
-        if (db)
-            sqlite3_close(db);
-        db = nullptr;
-        clear_error();
-        return true;
-    }
-
-    bool PropertiesPrivate::clear()
-    {
-        clear_error();
-        ret = sqlite3_exec(db, __p_TablesDeleteStmt, nullptr, nullptr, &error);
-        return ret == SQLITE_OK;
-    }
-
-    bool PropertiesPrivate::create()
-    {
-        clear_error();
-        ret = sqlite3_exec(db, __p_TableScheme, nullptr, nullptr, &error);
-        return ret == SQLITE_OK;
-    }
-
-    int PropertiesPrivate::nextId() const
-    {
-        return static_cast<int>(sqlite3_last_insert_rowid(db));
-    }
-
-    int PropertiesPrivate::count()
-    {
-        sqlite3_stmt *stmt = nullptr;
-        int result;
-        clear_error();
-
-        ret = sqlite3_prepare_v2(
-            db,
-            __p_TablesCountStmt,
-            std::strlen(__p_TablesCountStmt),
-            &stmt,
-            nullptr);
-        if (ret != SQLITE_OK)
-            return -1;
-        ret = sqlite3_step(stmt);
-        if (ret != SQLITE_ROW) {
-            sqlite3_finalize(stmt);
-            return -1;
-        }
-        result = sqlite3_column_int(stmt, 0);
-        ret = sqlite3_step(stmt);
-        if (ret != SQLITE_DONE)
-            result = -1;
-        sqlite3_finalize(stmt);
-        return result;
+        return properties.size();
     }
 
     bool PropertiesPrivate::add(const char * const szKey, const char * const szValue)
     {
-        sqlite3_stmt *stmt = nullptr;
-        clear_error();
-        ret = sqlite3_prepare_v2(
-            db,
-            __p_TablesInsertStmt,
-            std::strlen(__p_TablesInsertStmt),
-            &stmt,
-            nullptr);
-        if (ret != SQLITE_OK)
-            return false;
-        sqlite3_reset(stmt);
-        sqlite3_bind_text(stmt, 1, szKey, std::strlen(szKey), SQLITE_STATIC);
-        sqlite3_bind_text(stmt, 2, szValue, std::strlen(szValue), SQLITE_STATIC);
-        ret = sqlite3_step(stmt);
-        if (ret == SQLITE_DONE) {
-            sqlite3_last_insert_rowid(db);
-        }
-        sqlite3_finalize(stmt);
-        return ret == SQLITE_DONE;
+        properties[szKey] = szValue;
+        return true;
     }
 
     bool PropertiesPrivate::add(const char * const szKey, const wchar_t * const szValue)
@@ -184,25 +61,8 @@ namespace Internal {
 
     bool PropertiesPrivate::update(const char * const szKey, const char * const szValue)
     {
-        sqlite3_stmt *stmt = nullptr;
-        clear_error();
-        ret = sqlite3_prepare_v2(
-            db,
-            __p_TablesUpdateStmt,
-            std::strlen(__p_TablesUpdateStmt),
-            &stmt,
-            nullptr);
-        if (ret != SQLITE_OK)
-            return false;
-        sqlite3_reset(stmt);
-        sqlite3_bind_text(stmt, 1, szValue, std::strlen(szValue), SQLITE_STATIC);
-        sqlite3_bind_text(stmt, 2, szKey, std::strlen(szKey), SQLITE_STATIC);
-        ret = sqlite3_step(stmt);
-        if (ret == SQLITE_DONE) {
-            sqlite3_last_insert_rowid(db);
-        }
-        sqlite3_finalize(stmt);
-        return ret == SQLITE_DONE;
+        properties[szKey] = szValue;
+        return true;
     }
 
     bool PropertiesPrivate::update(const char * const szKey, const wchar_t * const szValue)
@@ -215,47 +75,8 @@ namespace Internal {
 
     bool PropertiesPrivate::remove(const char * const szKey)
     {
-        sqlite3_stmt *stmt = nullptr;
-        clear_error();
-        ret = sqlite3_prepare_v2(
-            db,
-            __p_TablesInsertStmt,
-            std::strlen(__p_TablesDeleteKeyStmt),
-            &stmt,
-            nullptr);
-        if (ret != SQLITE_OK)
-            return false;
-        sqlite3_reset(stmt);
-        sqlite3_bind_text(stmt, 1, szKey, std::strlen(szKey), SQLITE_STATIC);
-        ret = sqlite3_step(stmt);
-        sqlite3_finalize(stmt);
-        return ret == SQLITE_DONE;
-    }
-
-    bool PropertiesPrivate::list(PropertyList &list)
-    {
-        sqlite3_stmt *stmt = nullptr;
-        clear_error();
-
-        ret = sqlite3_prepare_v2(
-            db,
-            __p_TablesListStmt,
-            std::strlen(__p_TablesListStmt),
-            &stmt,
-            nullptr);
-        if (ret != SQLITE_OK)
-            return false;
-        while (true) {
-            ret = sqlite3_step(stmt);
-            if (ret != SQLITE_ROW)
-                break;
-            auto key = reinterpret_cast<char *>(const_cast<unsigned char *>(sqlite3_column_text(stmt, 1)));
-            auto value = reinterpret_cast<char *>(const_cast<unsigned char *>(sqlite3_column_text(stmt, 2)));
-            auto p = PropertyKey(key, value);
-            list.push_back(p);
-        }
-        sqlite3_finalize(stmt);
-        return ret == SQLITE_DONE;
+        properties.erase(properties.find(szKey));
+        return true;
     }
 
     char    *PropertiesPrivate::toString(const wchar_t * const szValue) const
@@ -294,26 +115,7 @@ namespace Internal {
     }
 
     std::string PropertiesPrivate::getString(const char * const szKey) {
-        std::string result;
-        sqlite3_stmt *stmt = nullptr;
-
-        clear_error();
-        ret = sqlite3_prepare_v2(
-            db,
-            __p_TablesGetStmt,
-            std::strlen(__p_TablesGetStmt),
-            &stmt,
-            nullptr);
-        if (ret != SQLITE_OK)
-            return result;
-        sqlite3_reset(stmt);
-        sqlite3_bind_text(stmt, 1, szKey, std::strlen(szKey), SQLITE_STATIC);
-        ret = sqlite3_step(stmt);
-        if (ret != SQLITE_ROW)
-            return result;
-        result = reinterpret_cast<char *>(const_cast<unsigned char *>(sqlite3_column_text(stmt, 2)));
-        sqlite3_finalize(stmt);
-        return result;
+        return properties[szKey];
     }
 
     std::wstring PropertiesPrivate::getWString(const char * const szKey)
@@ -327,6 +129,11 @@ namespace Internal {
         result = ret;
         free(ret);
         return result;
+    }
+
+    void PropertiesPrivate::clear()
+    {
+        properties.clear();
     }
 
     void PropertiesPrivate::free(LPVOID pMemory) const
@@ -347,35 +154,21 @@ namespace Internal {
 }
 using namespace Internal;
 
-Properties::Properties(Logger *logger)
-: d(new PropertiesPrivate(logger))
-{
-    d->open();
-}
-
-Properties::Properties(struct sqlite3 *db, Logger *logger)
-: d(new PropertiesPrivate(logger))
-{
-    d->db = db;
-    d->create();
-}
-
-Properties::~Properties()
-{
-}
+Properties::Properties()
+    : d(new PropertiesPrivate())
+{}
 
 std::string 
 Properties::getString(const char* const szKey, const char* const szDefault) const
 {
     std::lock_guard<std::mutex> locker(d->mutex);
-    auto ret = d->properties[szKey];// d->getString(szKey);
+    auto ret = d->properties[szKey];
     return ret.size() > 0 ? ret : std::string(szDefault == nullptr ? "" : szDefault);
 }
 
 std::wstring 
 Properties::getWString(const char* const szKey, const wchar_t* const szDefault) const
 {
-//    std::lock_guard<std::mutex> locker(d->mutex);
     auto ret = d->getWString(szKey);
     return ret.size() > 0 ? ret : std::wstring(szDefault == nullptr ? L"" : szDefault);
 }
@@ -383,16 +176,12 @@ Properties::getWString(const char* const szKey, const wchar_t* const szDefault) 
 void 
 Properties::setString(const char* const szKey, const char* const szValue) const
 {
-//    std::lock_guard<std::mutex> locker(d->mutex);
-    if (!d->add(szKey, szValue))
-        d->update(szKey, szValue);
     d->properties[szKey] = szValue;
 }
 
 void 
 Properties::setString(const char* const szKey, const wchar_t* const szValue) const
 {
-//    std::lock_guard<std::mutex> locker(d->mutex);
     if (!d->add(szKey, szValue))
         d->update(szKey, szValue);
 }
@@ -400,7 +189,6 @@ Properties::setString(const char* const szKey, const wchar_t* const szValue) con
 int 
 Properties::getInteger(const char* const szKey, int iDefault) const
 {
-//    std::lock_guard<std::mutex> locker(d->mutex);
     std::string::size_type sz;
     auto ret = getString(szKey);
     return ret.size() > 0 ? std::stoi(ret, &sz) : iDefault;
@@ -409,7 +197,6 @@ Properties::getInteger(const char* const szKey, int iDefault) const
 float 
 Properties::getFloat(const char* const szKey, float fDefault) const
 {
-    std::string::size_type sz;
     auto ret = getString(szKey);
     return ret.size() > 0 ? std::atof(ret.c_str()) : fDefault;
 }
@@ -417,7 +204,6 @@ Properties::getFloat(const char* const szKey, float fDefault) const
 bool 
 Properties::getBoolean(const char* const szKey, bool bDefaut) const
 {
-//    std::lock_guard<std::mutex> locker(d->mutex);
     auto ret = getString(szKey);
     return ret.size() > 0 ? !_stricmp(ret.c_str(), "true") : bDefaut;
 }
@@ -425,7 +211,6 @@ Properties::getBoolean(const char* const szKey, bool bDefaut) const
 void 
 Properties::setInteger(const char* const szKey, int iValue) const
 {
-//    std::lock_guard<std::mutex> locker(d->mutex);
     auto value = std::to_string(iValue);
     if (!d->add(szKey, value.c_str()))
         d->update(szKey, value.c_str());
@@ -482,13 +267,6 @@ Properties::save(const char* const szFileName) const
 
     prop.open(szFileName, std::ios_base::out);
     if (prop.is_open()) {
-//        PropertyList list;
-//        if (d->list(list)) {
-//            for (auto it = list.begin(); it != list.end(); ++it) {
-//                auto kv = (*it);
-//                prop << kv.first << " = " << kv.second << std::endl;
-//            }
-//        }
         for (auto it = d->properties.begin(); it != d->properties.end(); ++it) {
             prop << (*it).first << "=" << (*it).second << std::endl;
         }

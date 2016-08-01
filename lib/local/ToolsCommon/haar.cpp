@@ -1,11 +1,5 @@
 #include <Windows.h>
-#include <commctrl.h>
 #include <strsafe.h>
-#include <shlobj.h>
-#include <Dbt.h>
-#include <shlobj.h>
-#include <Shlwapi.h>
-
 #include "haar.h"
 
 

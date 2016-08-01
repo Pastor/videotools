@@ -1,9 +1,6 @@
 #include <Windows.h>
 #include <commctrl.h>
 #include <strsafe.h>
-#include <shlobj.h>
-#include <Dbt.h>
-#include <shlobj.h>
 #include <Shlwapi.h>
 #include <fstream>
 #include <string>
@@ -97,7 +94,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 
     sqlite3_initialize();
     gLogger = new Logger("tagsconverter.log");
-    gProp = new Properties(gLogger);
+    gProp = new Properties();
     gProp->load("settings.properties");
     gLogger->printf(TEXT("Запуск"));
     InitCommonControls();

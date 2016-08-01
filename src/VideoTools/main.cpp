@@ -1,9 +1,6 @@
 #include <Windows.h>
 #include <commctrl.h>
 #include <strsafe.h>
-#include <shlobj.h>
-#include <Dbt.h>
-#include <shlobj.h>
 #include <Shlwapi.h>
 
 #include <logger.h>
@@ -11,15 +8,7 @@
 #include <haar.h>
 
 #include <opencv2/core/core_c.h>
-#include <opencv2/core.hpp>
 #include <opencv2/highgui/highgui_c.h>
-#include <opencv2/highgui.hpp>
-#include <opencv2/imgproc/imgproc_c.h>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/imgproc/types_c.h>
-#include <opencv2/objdetect/objdetect_c.h>
-#include <opencv2/objdetect.hpp>
-#include <opencv2/video/tracking_c.h>
 #include <opencv2/videoio/videoio_c.h>
 
 #include "constants.h"
@@ -52,35 +41,6 @@ static std::atomic_bool is_processing;
 INT_PTR CALLBACK
 MainDialog(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-//#define TEST_PLUGIN
-#if defined(TEST_PLUGIN)
-#pragma comment(lib, "detectStasm.lib")
-extern "C" {
-    __declspec(dllimport)
-        INT __CreateProcess(const char *directory);
-
-    __declspec(dllimport)
-        INT __FrameProcess(IplImage *iFrame, float landmarks[200], int *iLandmarks);
-}
-
-static void
-__TestPlugin()
-{
-    auto i = cvCreateImage(cvSize(2000, 2000), IPL_DEPTH_8U, 1);
-    cvSet(i, CV_RGB(255, 0, 0));
-    auto ret = __CreateProcess("");
-    if (ret) {
-        float landmarks[200];
-        int   iLandmarks;
-
-        __FrameProcess(i, landmarks, &iLandmarks);
-        __asm nop;
-    }
-    cvReleaseImage(&i);
-}
-
-#endif
-
 int WINAPI
 WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
@@ -98,13 +58,12 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 
     sqlite3_initialize();
     gLogger = new Logger("newtools.log");
-    gProp = new Properties(gLogger);
+    gProp = new Properties();
     gProp->load("settings.properties");
     gLogger->printf(TEXT("Запуск"));
     LoadPlugins(TEXT("plugins"), gLogger, gProp, gPlugins);
     InitCommonControls();
     CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
-    //DialogBoxParam(hInstance, TEXT("MAINDIALOG"), NULL, MainDialog, (LPARAM)hInstance);
     hMainWnd = CreateDialogParam(hInstance, TEXT("MAINDIALOG"), nullptr, MainDialog, reinterpret_cast<LPARAM>(hInstance));
     ShowWindow(hMainWnd, SW_SHOW);
     ttlTime = 0;
@@ -139,10 +98,10 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 }
 
 static HBITMAP
-IplImage2DIB(const IplImage* Image)
+IplImage2DIB(const IplImage* image)
 {
-    auto bpp = Image->nChannels * 8;
-    assert(Image->width >= 0 && Image->height >= 0 &&
+    auto bpp = image->nChannels * 8;
+    assert(image->width >= 0 && image->height >= 0 &&
         (bpp == 8 || bpp == 24 || bpp == 32));
     CvMat dst;
     void* dst_ptr = nullptr;
@@ -153,8 +112,8 @@ IplImage2DIB(const IplImage* Image)
 
     RtlZeroMemory(bmih, sizeof(BITMAPINFOHEADER));
     bmih->biSize = sizeof(BITMAPINFOHEADER);
-    bmih->biWidth = Image->width;
-    bmih->biHeight = Image->origin ? abs(Image->height) : -abs(Image->height);
+    bmih->biWidth = image->width;
+    bmih->biHeight = image->origin ? abs(image->height) : -abs(image->height);
     bmih->biPlanes = 1;
     bmih->biBitCount = bpp;
     bmih->biCompression = BI_RGB;
@@ -168,9 +127,9 @@ IplImage2DIB(const IplImage* Image)
         }
     }
     hbmp = CreateDIBSection(nullptr, bmi, DIB_RGB_COLORS, &dst_ptr, 0, 0);
-    cvInitMatHeader(&dst, Image->height, Image->width, CV_8UC3,
-        dst_ptr, (Image->width * Image->nChannels + 3) & -4);
-    cvConvertImage(Image, &dst, Image->origin ? CV_CVTIMG_FLIP : 0);
+    cvInitMatHeader(&dst, image->height, image->width, CV_8UC3,
+        dst_ptr, (image->width * image->nChannels + 3) & -4);
+    cvConvertImage(image, &dst, image->origin ? CV_CVTIMG_FLIP : 0);
 
     return hbmp;
 }
@@ -260,13 +219,8 @@ static DWORD
 __ProcessFrames(LPVOID pParam)
 {
     auto p = static_cast<ProcessFramesParam *>(pParam);
-    IplImage  *i;
-    int        iFrame;
     int        iStopFrame;
-    int        iFailedFrame;
     FrameInfo  fi;
-    DWORD      dwStartTime;
-    DWORD      dwStartProcess;
     VideoPluginContext ctx = { nullptr, p->hMainWnd };
 
     RtlSecureZeroMemory(&fi, sizeof(fi));
@@ -399,14 +353,6 @@ MainDialog(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         auto wCtrlId = LOWORD(wParam);
 
         switch (wCtrlId) {
-        case IDC_FRAME_BITMAP:
-        {
-            if (hBitmap) {
-                //DeleteObject(hBitmap);
-                //SendDlgItemMessage(hWnd, IDC_FRAME_BITMAP, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
-            }
-            break;
-        }
         case ID_PLUGINS_UPDATE:
         {
             __UpdatePluginsMenu(hMainMenu);
@@ -419,7 +365,6 @@ MainDialog(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         }
         case ID_FILE_OPEN:
         {
-            //
             OPENFILENAMEA ofn;
             if (cvCapture != nullptr)
                 cvReleaseCapture(&cvCapture);
@@ -543,32 +488,6 @@ MainDialog(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         SetWindowText(hDetectedFaces, TEXT(""));
         SetWindowText(GetDlgItem(hWnd, IDC_START_PROCESS), TEXT("Запуск"));
         EnableMenuItem(hMainMenu, ID_PLUGINS_LOADED, MF_ENABLED | MF_BYCOMMAND);
-        break;
-    }
-    case WM_FRAME_UPDATE:
-    {
-        /*IplImage *frame;
-        if (cvCapture) {
-        HWND hBitmapWindows = GetDlgItem(hWnd, IDC_FRAME_BITMAP);
-        frame = cvQueryFrame(cvCapture);
-        if (frame) {
-        IplImage *result;
-        RECT      rect;
-
-        GetClientRect(hWnd, &rect);
-        result = cvCreateImage(cvSize(rect.right, rect.bottom), frame->depth, frame->nChannels);
-        if (hBitmap)
-        DeleteObject(hBitmap);
-        hBitmap = NULL;
-        cvResize(frame, result, CV_INTER_LINEAR);
-        hBitmap = IplImage2DIB(result);
-        SendDlgItemMessage(hWnd, IDC_FRAME_BITMAP, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hBitmap);
-        UpdateWindow(hBitmapWindows);
-        if (writer)
-        cvWriteFrame(writer, frame);
-        cvReleaseImage(&result);
-        }
-        }*/
         break;
     }
     case WM_CTLCOLORSTATIC:

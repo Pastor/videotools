@@ -1,19 +1,16 @@
 #pragma once
 #include <memory>
 
-struct sqlite3;
 class  Logger;
 
 namespace Internal {
     class PropertiesPrivate;
 }
 
-class Properties {
+class Properties final {
     using PropertiesPrivate = Internal::PropertiesPrivate;
 public:
-    explicit Properties(Logger *logger = nullptr);
-    explicit Properties(struct sqlite3 *db, Logger *logger = nullptr);
-    virtual ~Properties();
+    explicit Properties();
 
     std::string  getString (const char * const szKey, const char * const szDefault = nullptr) const;
     std::wstring getWString(const char * const szKey, const wchar_t * const szDefault = nullptr) const;

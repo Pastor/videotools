@@ -22,7 +22,7 @@ __SafeClose(FILE **fd)
     }
 }
 
-class LoggerPrivate
+class LoggerPrivate final
 {
 public:
     LoggerPrivate()
@@ -65,7 +65,7 @@ public:
         offset = 0;
         return true;
     }
-    bool write()
+    bool write() const
     {
         return write(szBuffer, offset) == offset;
     }
@@ -77,7 +77,7 @@ public:
     }
     void add(const char * const szData)
     {
-        std::size_t len = std::strlen(szData);
+        auto len = std::strlen(szData);
         
         allocate(len);
         memcpy(szBuffer + offset, szData, len);
@@ -114,7 +114,7 @@ public:
         flush();
     }
 
-    std::size_t write(void *pBuffer, std::size_t size)
+    std::size_t write(void *pBuffer, std::size_t size) const
     {
         std::size_t ret;
 
@@ -152,22 +152,22 @@ Logger::~Logger()
 }
 
 void
-Logger::event()
+Logger::event() const
 {
     d->event++;
 }
 
 void 
-Logger::event(int id)
+Logger::event(int id) const
 {
     d->event = id;
 }
 
 void 
-Logger::printf(const char* const szFormat, ...)
+Logger::printf(const char* const szFormat, ...) const
 {
     std::lock_guard<std::mutex>  locker(d->mutex);
-    std::size_t len = std::strlen(szFormat);
+    auto len = std::strlen(szFormat);
     va_list args;
 
     d->addDate();
@@ -179,10 +179,10 @@ Logger::printf(const char* const szFormat, ...)
 }
 
 void 
-Logger::printf(const wchar_t* const szFormat, ...)
+Logger::printf(const wchar_t* const szFormat, ...) const
 {
     std::lock_guard<std::mutex>  locker(d->mutex);
-    std::size_t len = std::wcslen(szFormat);
+    auto len = std::wcslen(szFormat);
     LPWSTR lpPrepared = nullptr;
     int ret;
     va_list args;

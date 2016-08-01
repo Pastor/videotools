@@ -1,9 +1,5 @@
 #pragma once
 #include <memory>
-#include <atomic>
-#include <mutex>
-#include <cstdio>
-#include <cstdlib>
 
 class LoggerPrivate;
 
@@ -14,10 +10,10 @@ public:
     explicit Logger(const char * const szFileName, bool showDate = true);
     ~Logger();
 
-    void event();
-    void event(int id);
-    void printf(const char * const szFormat, ...);
-    void printf(const wchar_t * const szFormat, ...);
+    void event() const;
+    void event(int id) const;
+    void printf(const char * const szFormat, ...) const;
+    void printf(const wchar_t * const szFormat, ...) const;
 };
 
 

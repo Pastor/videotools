@@ -1,15 +1,7 @@
 #pragma once
 #include <opencv2/core/core_c.h>
 #include <opencv2/core.hpp>
-#include <opencv2/highgui/highgui_c.h>
-#include <opencv2/highgui.hpp>
-#include <opencv2/imgproc/imgproc_c.h>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/imgproc/types_c.h>
 #include <opencv2/objdetect/objdetect_c.h>
-#include <opencv2/objdetect.hpp>
-#include <opencv2/video/tracking_c.h>
-#include <opencv2/videoio/videoio_c.h>
 
 #define OBJECT_MINSIZE   80
 

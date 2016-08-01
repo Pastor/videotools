@@ -1,9 +1,4 @@
 #include <Windows.h>
-#include <commctrl.h>
-#include <strsafe.h>
-#include <shlobj.h>
-#include <Dbt.h>
-#include <shlobj.h>
 #include <Shlwapi.h>
 
 #pragma comment(lib, "comctl32.lib")

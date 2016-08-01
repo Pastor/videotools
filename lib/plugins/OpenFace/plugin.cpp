@@ -29,7 +29,7 @@
 static DWORD dwCtxIndex;
 static DWORD dwProcessId;
 
-struct ProcessContext
+struct ProcessContext final
 {
     CvHaarClassifierCascade *classifier;
     CvMemStorage            *storage;
