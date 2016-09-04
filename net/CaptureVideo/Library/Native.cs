@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Emgu.CV;
+using Emgu.CV.Structure;
 
 namespace CaptureVideo.Library
 {
@@ -21,7 +23,62 @@ namespace CaptureVideo.Library
 
         #region ProcessSession
         [DllImport(LibraryName, EntryPoint = "process_wrap", SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void Process(IntPtr pImage, [Out] out IntPtr outPoint, out int outSize);
+        private static extern int Process(IntPtr pImage, [Out] out IntPtr outPoint, out int outSize);
         #endregion
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
+        public struct SessionPoint
+        {
+            public int x;
+            public int y;
+        }
+
+        internal enum ProcessResult
+        {
+            Error,
+            EmptyImage,
+            NotDetected,
+            Success
+        }
+
+        internal static string ToString(ProcessResult result)
+        {
+            switch (result) {
+                case ProcessResult.EmptyImage:
+                    return @"Ошибочное изображение";
+                case ProcessResult.NotDetected:
+                    return @"Не определено лицо";
+                case ProcessResult.Success:
+                    return @"Удачно";
+                default:
+                    return @"Ошибка обработки";
+            }
+        }
+
+        public static ProcessResult Process(Mat image, out SessionPoint[] points)
+        {
+            IntPtr outPtr;
+            int outSize;
+            int result;
+
+            using (var i = image.ToImage<Bgra, byte>()) {
+                result = Process(i.Ptr, out outPtr, out outSize);
+            }
+            points = new SessionPoint[outSize];
+            var size = Marshal.SizeOf(new SessionPoint());
+            for (var i = 0; i < outSize; i++) {
+                points[i] = (SessionPoint)Marshal.PtrToStructure(new IntPtr(outPtr.ToInt64() + (i * size)), typeof(SessionPoint));
+            }
+            switch (result) {
+                case 1:
+                    return ProcessResult.EmptyImage;
+                case 2:
+                    return ProcessResult.NotDetected;
+                case 3:
+                    return ProcessResult.Success;
+                default:
+                    return ProcessResult.Error;
+            }
+        }
     }
 }

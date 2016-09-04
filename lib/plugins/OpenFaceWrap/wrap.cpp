@@ -24,13 +24,14 @@ struct ProcessContext final
 {
     LandmarkDetector::FaceModelParameters  det_params;
     LandmarkDetector::CLNF                *clnf_model;
+    Point                                 *points;
     float fx = 0;
     float fy = 0;
     float cx = 0;
     float cy = 0;
     bool cx_undefined = true;
     bool fx_undefined = true;
-    Logger                                *logger;
+    FILE *fd = nullptr;
 };
 
 static void __inline
@@ -42,12 +43,8 @@ __Get(struct ProcessContext **pCtx)
 static __inline void
 __InitContext(struct ProcessContext *ctx)
 {
-    //    char buffer[256];
-    //    auto pid = GetCurrentProcessId();
-    //
-    //    wsprintfA(buffer, "openface.%05d.log", pid);
-    //    ctx->logger = new Logger(buffer);
-    //    ctx->logger->printf("START");
+    ctx->points = new Point[200];
+    fopen_s(&ctx->fd, "wrap.log", "a+");
 }
 
 static __inline void
@@ -62,6 +59,9 @@ __DestroyContext(struct ProcessContext *ctx)
             ctx->clnf_model = nullptr;
             ctx->cx_undefined = true;
             ctx->fx_undefined = true;
+            delete[] ctx->points;
+            if (ctx->fd)
+                fclose(ctx->fd);
         }
     } __except (EXCEPTION_EXECUTE_HANDLER)
     {
@@ -78,17 +78,27 @@ create_wrap(const char * const modelPath)
     destroy_wrap();
     ctx->clnf_model = new LandmarkDetector::CLNF(modelPath);
     ctx->det_params.track_gaze = true;
+    fprintf(ctx->fd, "START\n");
+    fflush(ctx->fd);
 }
 
-void
+#define DEBUG() \
+  fprintf(ctx->fd, "%d\n", __LINE__);\
+  fflush(ctx->fd);
+
+int
 process_wrap(const void *pImage, Point **p, int *nSize)
 {
     ProcessContext *ctx;
 
     __Get(&ctx);
 
-    if (!CV_IS_IMAGE_HDR(pImage))
-        return;
+
+    if (!CV_IS_IMAGE(pImage)) {
+        fprintf(ctx->fd, "%d == %d\n", sizeof(IplImage), reinterpret_cast<const IplImage*>(p)->nSize);
+        fflush(ctx->fd);
+        return -1;
+    }
 
     auto captured_image = cv::cvarrToMat(pImage);
     if (ctx->cx_undefined) {
@@ -114,32 +124,41 @@ process_wrap(const void *pImage, Point **p, int *nSize)
         } else {
             grayscale_image = captured_image.clone();
         }
-
+        fprintf(ctx->fd, "Cols: %d\n", captured_image.cols);
+        fprintf(ctx->fd, "Rows: %d\n", captured_image.rows);
+        fflush(ctx->fd);
         // The actual facial landmark detection / tracking
         auto detection_success = LandmarkDetector::DetectLandmarksInVideo(grayscale_image, depth_image, *ctx->clnf_model, ctx->det_params);
         auto detection_certainty = (*ctx->clnf_model).detection_certainty;
-
+        DEBUG();
         // Gaze tracking, absolute gaze direction
         cv::Point3f gazeDirection0(0, 0, -1);
         cv::Point3f gazeDirection1(0, 0, -1);
-
+        DEBUG();
         if (ctx->det_params.track_gaze && detection_success && (*ctx->clnf_model).eye_model) {
             FaceAnalysis::EstimateGaze((*ctx->clnf_model), gazeDirection0, ctx->fx, ctx->fy, ctx->cx, ctx->cy, true);
             FaceAnalysis::EstimateGaze((*ctx->clnf_model), gazeDirection1, ctx->fx, ctx->fy, ctx->cx, ctx->cy, false);
         }
-
+        DEBUG();
+        (*nSize) = 0;
+        (*p) = ctx->points;
         const auto visualisation_boundary = 0.2;
-        if (detection_success && detection_certainty < visualisation_boundary) {
+        if (detection_success/* && detection_certainty < visualisation_boundary*/) {
             auto n = ctx->clnf_model->detected_landmarks.rows / 2;
+            (*nSize) = n;
             for (auto i = 0; i < n; ++i) {
                 cv::Point featurePoint(
-                    static_cast<int>(ctx->clnf_model->detected_landmarks.at<double>(i)), 
+                    static_cast<int>(ctx->clnf_model->detected_landmarks.at<double>(i)),
                     static_cast<int>(ctx->clnf_model->detected_landmarks.at<double>(i + n)));
                 (*p)[i].x = featurePoint.x;
                 (*p)[i].y = featurePoint.y;
             }
+            DEBUG();
+            return 3;
         }
+        return 2;
     }
+    return 1;
 }
 
 void
@@ -148,7 +167,7 @@ destroy_wrap()
     ProcessContext *ctx;
 
     __Get(&ctx);
-    __DestroyContext(ctx);
+    //    __DestroyContext(ctx);
 }
 
 static void

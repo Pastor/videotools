@@ -20,7 +20,7 @@ extern "C" {
         void create_wrap(const char * const modelPath);
 
     __declspec(dllexport)
-        void process_wrap(const void *pImage, Point **p, int *nSize);
+        int process_wrap(const void *pImage, Point **p, int *nSize);
 
     __declspec(dllexport)
         void destroy_wrap();

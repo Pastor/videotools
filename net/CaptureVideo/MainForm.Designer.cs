@@ -29,6 +29,10 @@
         {
             this.videoImage = new System.Windows.Forms.PictureBox();
             this.lblMemory = new System.Windows.Forms.Label();
+            this.btnStart = new System.Windows.Forms.Button();
+            this.btnComplete = new System.Windows.Forms.Button();
+            this.lblInformation = new System.Windows.Forms.Label();
+            this.lblDetected = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.videoImage)).BeginInit();
             this.SuspendLayout();
             // 
@@ -36,29 +40,69 @@
             // 
             this.videoImage.Location = new System.Drawing.Point(12, 12);
             this.videoImage.Name = "videoImage";
-            this.videoImage.Size = new System.Drawing.Size(871, 376);
-            this.videoImage.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.videoImage.Size = new System.Drawing.Size(574, 376);
+            this.videoImage.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
             this.videoImage.TabIndex = 0;
             this.videoImage.TabStop = false;
             // 
             // lblMemory
             // 
-            this.lblMemory.Location = new System.Drawing.Point(799, 427);
+            this.lblMemory.Location = new System.Drawing.Point(502, 426);
             this.lblMemory.Name = "lblMemory";
             this.lblMemory.Size = new System.Drawing.Size(84, 13);
             this.lblMemory.TabIndex = 1;
             this.lblMemory.Text = "Unknown";
             this.lblMemory.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
+            // btnStart
+            // 
+            this.btnStart.Location = new System.Drawing.Point(12, 422);
+            this.btnStart.Name = "btnStart";
+            this.btnStart.Size = new System.Drawing.Size(81, 23);
+            this.btnStart.TabIndex = 2;
+            this.btnStart.Text = "Запуск";
+            this.btnStart.UseVisualStyleBackColor = true;
+            this.btnStart.Click += new System.EventHandler(this.btnStart_Click);
+            // 
+            // btnComplete
+            // 
+            this.btnComplete.Location = new System.Drawing.Point(12, 393);
+            this.btnComplete.Name = "btnComplete";
+            this.btnComplete.Size = new System.Drawing.Size(81, 23);
+            this.btnComplete.TabIndex = 3;
+            this.btnComplete.Text = "Остановка";
+            this.btnComplete.UseVisualStyleBackColor = true;
+            this.btnComplete.Click += new System.EventHandler(this.btnComplete_Click);
+            // 
+            // lblInformation
+            // 
+            this.lblInformation.Location = new System.Drawing.Point(100, 427);
+            this.lblInformation.Name = "lblInformation";
+            this.lblInformation.Size = new System.Drawing.Size(396, 18);
+            this.lblInformation.TabIndex = 4;
+            this.lblInformation.Text = "Старт...";
+            // 
+            // lblDetected
+            // 
+            this.lblDetected.Location = new System.Drawing.Point(100, 400);
+            this.lblDetected.Name = "lblDetected";
+            this.lblDetected.Size = new System.Drawing.Size(249, 10);
+            this.lblDetected.TabIndex = 5;
+            this.lblDetected.Text = "Unknown";
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 11F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(895, 449);
+            this.ClientSize = new System.Drawing.Size(597, 448);
+            this.Controls.Add(this.lblDetected);
+            this.Controls.Add(this.lblInformation);
+            this.Controls.Add(this.btnComplete);
+            this.Controls.Add(this.btnStart);
             this.Controls.Add(this.lblMemory);
             this.Controls.Add(this.videoImage);
             this.Font = new System.Drawing.Font("Lucida Console", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.SizableToolWindow;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
             this.Name = "MainForm";
             this.Text = "Захват видео";
             ((System.ComponentModel.ISupportInitialize)(this.videoImage)).EndInit();
@@ -70,6 +114,10 @@
 
         private System.Windows.Forms.PictureBox videoImage;
         private System.Windows.Forms.Label lblMemory;
+        private System.Windows.Forms.Button btnStart;
+        private System.Windows.Forms.Button btnComplete;
+        private System.Windows.Forms.Label lblInformation;
+        private System.Windows.Forms.Label lblDetected;
     }
 }
 
