@@ -1,6 +1,8 @@
 #pragma once
 #include <Windows.h>
 #include <vector>
+#include <atomic>
+#include <mutex>
 
 struct _IplImage;
 struct CvSeq;

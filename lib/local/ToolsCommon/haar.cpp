@@ -1,6 +1,9 @@
 #include <Windows.h>
 #include <strsafe.h>
+#include <opencv2/core/core_c.h>
+#include <opencv2/core/types_c.h>
 #include "haar.h"
+#include "../FaceAnalyser/include/Face_utils.h"
 
 
 void

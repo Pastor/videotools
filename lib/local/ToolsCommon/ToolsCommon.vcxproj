@@ -86,10 +86,10 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(SolutionDir)/lib/3rdParty/sqlite3;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)\lib\local\LandmarkDetector\include;$(SolutionDir)/lib/3rdParty/sqlite3;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(VC_IncludePath);$(SolutionDir)/lib/3rdParty/sqlite3;$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>$(SolutionDir)\lib\local\LandmarkDetector\include;$(VC_IncludePath);$(SolutionDir)/lib/3rdParty/sqlite3;$(WindowsSDK_IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(VC_IncludePath);$(SolutionDir)/lib/3rdParty/sqlite3;$(WindowsSDK_IncludePath);</IncludePath>

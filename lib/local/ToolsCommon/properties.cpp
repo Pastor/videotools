@@ -2,6 +2,8 @@
 #include <iostream>
 #include <fstream>
 #include <unordered_map>
+#include <atomic>
+#include <mutex>
 #include "xstring.h"
 #include "logger.h"
 #include "properties.h"

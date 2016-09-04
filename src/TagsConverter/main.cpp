@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <logger.h>
 #include <xstring.h>
+#include <atomic>
+#include <mutex>
 #include <boost/filesystem.hpp>
 
 #include "constants.h"
