@@ -13,9 +13,9 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Threading;
 using System.Windows.Threading;
-using CaptureVideo.Library;
 using Emgu.CV;
 using Emgu.CV.Structure;
+using OfPackage.Library;
 
 
 namespace CaptureVideo
@@ -43,16 +43,18 @@ namespace CaptureVideo
             _timer.Start();
             _capture.Tick += (sender, args) => {
                 lock (Locker) {
+                    if (!_camera.HasNext) return;
                     Native.SessionPoint[] points;
                     var frame = _camera.Frame;
                     videoImage.Image?.Dispose();
-                    var result = Native.Process(frame, out points);
                     videoImage.Image = new Bitmap(frame.Bitmap);
+                    videoImage.Invalidate();
+                    var result = Native.Process(frame, out points);
                     lblDetected.Text = Native.ToString(result);
                     lblDetected.Invalidate();
                 }
             };
-            lblDetected.Text = @"Не найдено";
+            lblDetected.Text = @"";
         }
 
         private void DeInitialize()
@@ -74,7 +76,7 @@ namespace CaptureVideo
             Color color;
             if (startBytes < 80000000) {
                 color = Color.DarkGreen;
-            } else if (startBytes >= 100000000 && startBytes < 150000000) {
+            } else if (startBytes >= 100000000 && startBytes < 200000000) {
                 color = Color.Chocolate;
             } else {
                 color = Color.DarkRed;
@@ -85,23 +87,46 @@ namespace CaptureVideo
 
         private void btnStart_Click(object sender, EventArgs e)
         {
+            _camera.Start();
+            btnStart.Enabled = false;
+            btnComplete.Enabled = true;
+
             if (!_initialized) {
                 lblInformation.Text = @"Запуск OpenFace...";
                 lblInformation.Invalidate();
-                Native.Create(@"D:\GitHub\videotools\Debug\model\main_clnf_general.txt");
+                Native.Create(@"D:\GitHub\videotools\Debug\model\main_clm_general.txt");
                 _initialized = true;
             }
-            _camera.Start();
-            _capture.Interval = new TimeSpan(30);
+
+            _capture.Interval = new TimeSpan(300);
             _capture.Start();
-            lblInformation.Text = @"Запуск захвата видео";
+            lblInformation.Text = @"Захват видео запущен";
+            lblInformation.Invalidate();
         }
 
         private void btnComplete_Click(object sender, EventArgs e)
         {
-            _capture.Stop();
+            lblDetected.Text = @"";
+            btnStart.Enabled = true;
+            btnComplete.Enabled = false;
+            lblInformation.Text = @"Закрывается камера";
+            lblInformation.Invalidate();
             _camera.Close();
-            lblInformation.Text = @"Остановка захвата";
+            lblInformation.Text = @"Останавливается процесс обработки";
+            lblInformation.Invalidate();
+            _capture.Stop();
+            lblInformation.Text = @"Захват останавливается";
+            lblInformation.Invalidate();
+            _initialized = false;
+            Native.Destroy();
+            lblInformation.Text = @"Захват остановлен";
+            lblInformation.Invalidate();
+        }
+
+        private void btnGC_Click(object sender, EventArgs e)
+        {
+            GC.Collect();
+            GC.WaitForFullGCApproach();
         }
     }
 
@@ -137,7 +162,8 @@ namespace CaptureVideo
             }
         }
 
-        public bool HasNext => true;
+        public bool HasNext => _capture != null && _capture.Grab();
+
 
         public void Reset()
         {
@@ -154,7 +180,9 @@ namespace CaptureVideo
 
         public void Close()
         {
+            _capture?.Stop();
             _capture?.Dispose();
+            _capture = null;
         }
 
         public void Dispose()

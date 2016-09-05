@@ -21,15 +21,15 @@
 int 
 main(int argc, char **argv)
 {
-    create_wrap("C:\\work\\videotools\\Debug\\model\\main_clm_general.txt");
-    CvCapture *c = cvCreateFileCapture("C:\\work\\videotools\\sample.avi");
+    create_wrap("D:\\GitHub\\videotools\\Debug\\model\\main_clm_general.txt");
+    auto c = cvCreateCameraCapture(0);//cvCreateFileCapture("C:\\work\\videotools\\sample.avi");
     Point *p = nullptr;
-    int size = 0;
+    auto size = 0;
     IplImage *i;
 
     while ((i = cvQueryFrame(c)) != nullptr) {
         auto ret = process_wrap(i, &p, &size);
-        fprintf(stdout, "[%05d]: %d\n", (int)cvGetCaptureProperty(c, CV_CAP_PROP_POS_FRAMES), ret);
+        fprintf(stdout, "[%05d]: %d\n", static_cast<int>(cvGetCaptureProperty(c, CV_CAP_PROP_POS_FRAMES)), ret);
     }
 
     cvReleaseCapture(&c);

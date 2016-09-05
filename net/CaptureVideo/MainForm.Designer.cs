@@ -33,6 +33,7 @@
             this.btnComplete = new System.Windows.Forms.Button();
             this.lblInformation = new System.Windows.Forms.Label();
             this.lblDetected = new System.Windows.Forms.Label();
+            this.btnGC = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.videoImage)).BeginInit();
             this.SuspendLayout();
             // 
@@ -47,9 +48,9 @@
             // 
             // lblMemory
             // 
-            this.lblMemory.Location = new System.Drawing.Point(502, 426);
+            this.lblMemory.Location = new System.Drawing.Point(475, 426);
             this.lblMemory.Name = "lblMemory";
-            this.lblMemory.Size = new System.Drawing.Size(84, 13);
+            this.lblMemory.Size = new System.Drawing.Size(65, 13);
             this.lblMemory.TabIndex = 1;
             this.lblMemory.Text = "Unknown";
             this.lblMemory.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -78,9 +79,8 @@
             // 
             this.lblInformation.Location = new System.Drawing.Point(100, 427);
             this.lblInformation.Name = "lblInformation";
-            this.lblInformation.Size = new System.Drawing.Size(396, 18);
+            this.lblInformation.Size = new System.Drawing.Size(369, 12);
             this.lblInformation.TabIndex = 4;
-            this.lblInformation.Text = "Старт...";
             // 
             // lblDetected
             // 
@@ -90,11 +90,22 @@
             this.lblDetected.TabIndex = 5;
             this.lblDetected.Text = "Unknown";
             // 
+            // btnGC
+            // 
+            this.btnGC.Location = new System.Drawing.Point(553, 421);
+            this.btnGC.Name = "btnGC";
+            this.btnGC.Size = new System.Drawing.Size(33, 23);
+            this.btnGC.TabIndex = 6;
+            this.btnGC.Text = "GC";
+            this.btnGC.UseVisualStyleBackColor = true;
+            this.btnGC.Click += new System.EventHandler(this.btnGC_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 11F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(597, 448);
+            this.Controls.Add(this.btnGC);
             this.Controls.Add(this.lblDetected);
             this.Controls.Add(this.lblInformation);
             this.Controls.Add(this.btnComplete);
@@ -118,6 +129,7 @@
         private System.Windows.Forms.Button btnComplete;
         private System.Windows.Forms.Label lblInformation;
         private System.Windows.Forms.Label lblDetected;
+        private System.Windows.Forms.Button btnGC;
     }
 }
 

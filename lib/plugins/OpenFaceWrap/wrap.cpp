@@ -1,11 +1,12 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <xstring.h>
-#include <logger.h>
 #include <haar.h>
 #include "wrap.h"
 #include <opencv2/imgproc.hpp>
 #include <LandmarkCoreIncludes.h>
 #include <GazeEstimation.h>
+#include <atomic>
+#include <mutex>
 
 #include <Windows.h>
 
@@ -19,6 +20,8 @@
 
 static DWORD dwCtxIndex;
 static DWORD dwProcessId;
+static int counter = 0;
+static std::mutex _locker;
 
 struct ProcessContext final
 {
@@ -48,25 +51,48 @@ __InitContext(struct ProcessContext *ctx)
 }
 
 static __inline void
-__DestroyContext(struct ProcessContext *ctx)
+__Destroy(struct ProcessContext *ctx)
+{
+    std::lock_guard<std::mutex> ignored(_locker);
+    if (ctx) {
+        if (ctx->clnf_model) {
+            ctx->clnf_model->Reset();
+            delete ctx->clnf_model;
+        }
+        ctx->clnf_model = nullptr;
+        ctx->cx_undefined = true;
+        ctx->fx_undefined = true;
+    }
+}
+
+
+static __inline void
+__DestroyContext___(struct ProcessContext *ctx)
 {
     __try {
         if (ctx) {
-            if (ctx->clnf_model) {
-                ctx->clnf_model->Reset();
-                delete ctx->clnf_model;
-            }
-            ctx->clnf_model = nullptr;
-            ctx->cx_undefined = true;
-            ctx->fx_undefined = true;
-            delete[] ctx->points;
-            if (ctx->fd)
+            __Destroy(ctx);
+            if (ctx->points)
+                delete[] ctx->points;
+            ctx->points = nullptr;
+            if (ctx->fd) {
+                fprintf(ctx->fd, "DESTROY\n");
+                fflush(ctx->fd);
                 fclose(ctx->fd);
+            }
+            ctx->fd = nullptr;
         }
     } __except (EXCEPTION_EXECUTE_HANDLER)
     {
 
     }
+}
+
+static __inline void
+__DestroyContext(struct ProcessContext *ctx)
+{
+    std::lock_guard<std::mutex> ignored(_locker);
+    __DestroyContext___(ctx);
 }
 
 void
@@ -75,11 +101,11 @@ create_wrap(const char * const modelPath)
     ProcessContext *ctx;
 
     __Get(&ctx);
-    destroy_wrap();
+    __Destroy(ctx);
     ctx->clnf_model = new LandmarkDetector::CLNF(modelPath);
     ctx->det_params = LandmarkDetector::FaceModelParameters();
     ctx->det_params.track_gaze = true;
-    fprintf(ctx->fd, "START\n");
+    fprintf(ctx->fd, "CREATE\n");
     fflush(ctx->fd);
 }
 
@@ -101,7 +127,7 @@ process_wrap(const void *pImage, Point **p, int *nSize)
         return -1;
     }
 
-    auto captured_image = cv::cvarrToMat(pImage);
+    auto captured_image = cv::cvarrToMat(pImage, true);
     if (ctx->cx_undefined) {
         ctx->cx = captured_image.cols / 2.0f;
         ctx->cy = captured_image.rows / 2.0f;
@@ -116,6 +142,7 @@ process_wrap(const void *pImage, Point **p, int *nSize)
     }
 
     if (captured_image.cols > 0) {
+        char buffer[256];
         cv::Mat_<float> depth_image;
         cv::Mat_<uchar> grayscale_image;
         auto disp_image = captured_image.clone();
@@ -125,26 +152,22 @@ process_wrap(const void *pImage, Point **p, int *nSize)
         } else {
             grayscale_image = captured_image.clone();
         }
-        fprintf(ctx->fd, "Cols: %d\n", captured_image.cols);
-        fprintf(ctx->fd, "Rows: %d\n", captured_image.rows);
-        fflush(ctx->fd);
+        ++counter;
         // The actual facial landmark detection / tracking
         auto detection_success = LandmarkDetector::DetectLandmarksInVideo(grayscale_image, depth_image, *ctx->clnf_model, ctx->det_params);
         auto detection_certainty = (*ctx->clnf_model).detection_certainty;
-        DEBUG();
         // Gaze tracking, absolute gaze direction
         cv::Point3f gazeDirection0(0, 0, -1);
         cv::Point3f gazeDirection1(0, 0, -1);
-        DEBUG();
+
         if (ctx->det_params.track_gaze && detection_success && (*ctx->clnf_model).eye_model) {
             FaceAnalysis::EstimateGaze((*ctx->clnf_model), gazeDirection0, ctx->fx, ctx->fy, ctx->cx, ctx->cy, true);
             FaceAnalysis::EstimateGaze((*ctx->clnf_model), gazeDirection1, ctx->fx, ctx->fy, ctx->cx, ctx->cy, false);
         }
-        DEBUG();
         (*nSize) = 0;
         (*p) = ctx->points;
         const auto visualisation_boundary = 0.2;
-        if (detection_success/* && detection_certainty < visualisation_boundary*/) {
+        if (detection_success && detection_certainty < visualisation_boundary) {
             auto n = ctx->clnf_model->detected_landmarks.rows / 2;
             (*nSize) = n;
             for (auto i = 0; i < n; ++i) {
@@ -154,7 +177,6 @@ process_wrap(const void *pImage, Point **p, int *nSize)
                 (*p)[i].x = featurePoint.x;
                 (*p)[i].y = featurePoint.y;
             }
-            DEBUG();
             return 3;
         }
         return 2;
@@ -168,74 +190,7 @@ destroy_wrap()
     ProcessContext *ctx;
 
     __Get(&ctx);
-    //    __DestroyContext(ctx);
-}
-
-static void
-write_ldots(FILE *fd, const cv::Mat_<double>& shape2D)
-{
-    auto n = shape2D.rows / 2;
-    for (auto i = 0; i < n; ++i) {
-        cv::Point featurePoint(static_cast<int>(shape2D.at<double>(i)), static_cast<int>(shape2D.at<double>(i + n)));
-        fprintf(fd, ";%05d;%05d", featurePoint.x, featurePoint.y);
-    }
-}
-
-static cv::Point3f
-GetPupilPosition(cv::Mat_<double> eyeLdmks3d)
-{
-
-    eyeLdmks3d = eyeLdmks3d.t();
-
-    cv::Mat_<double> irisLdmks3d = eyeLdmks3d.rowRange(0, 8);
-
-    cv::Point3f p(mean(irisLdmks3d.col(0))[0], mean(irisLdmks3d.col(1))[0], mean(irisLdmks3d.col(2))[0]);
-    return p;
-}
-
-static void
-write_gaze(FILE *fd, cv::Mat img, const LandmarkDetector::CLNF& clnf_model, cv::Point3f gazeVecAxisLeft, cv::Point3f gazeVecAxisRight, float fx, float fy, float cx, float cy)
-{
-
-    cv::Mat cameraMat = (cv::Mat_<double>(3, 3) << fx, 0, cx, 0, fy, cy, 0, 0, 0);
-
-    auto part_left = -1;
-    auto part_right = -1;
-    for (size_t i = 0; i < clnf_model.hierarchical_models.size(); ++i) {
-        if (clnf_model.hierarchical_model_names[i].compare("left_eye_28") == 0) {
-            part_left = i;
-        }
-        if (clnf_model.hierarchical_model_names[i].compare("right_eye_28") == 0) {
-            part_right = i;
-        }
-    }
-
-    cv::Mat eyeLdmks3d_left = clnf_model.hierarchical_models[part_left].GetShape(fx, fy, cx, cy);
-    auto pupil_left = GetPupilPosition(eyeLdmks3d_left);
-
-    cv::Mat eyeLdmks3d_right = clnf_model.hierarchical_models[part_right].GetShape(fx, fy, cx, cy);
-    auto pupil_right = GetPupilPosition(eyeLdmks3d_right);
-
-    vector<cv::Point3d> points_left;
-    points_left.push_back(cv::Point3d(pupil_left));
-    points_left.push_back(cv::Point3d(pupil_left + gazeVecAxisLeft*50.0));
-
-    vector<cv::Point3d> points_right;
-    points_right.push_back(cv::Point3d(pupil_right));
-    points_right.push_back(cv::Point3d(pupil_right + gazeVecAxisRight*50.0));
-
-    cv::Mat_<double> proj_points;
-    cv::Mat_<double> mesh_0 = (cv::Mat_<double>(2, 3) << points_left[0].x, points_left[0].y, points_left[0].z, points_left[1].x, points_left[1].y, points_left[1].z);
-    LandmarkDetector::Project(proj_points, mesh_0, fx, fy, cx, cy);
-    //    line(img, cv::Point(proj_points.at<double>(0, 0), proj_points.at<double>(0, 1)), cv::Point(proj_points.at<double>(1, 0), proj_points.at<double>(1, 1)), cv::Scalar(110, 220, 0), 2, 8);
-    fprintf(fd, ";%05d;%05d", static_cast<int>(proj_points.at<double>(0, 0)), static_cast<int>(proj_points.at<double>(0, 1)));
-    fprintf(fd, ";%05d;%05d", static_cast<int>(proj_points.at<double>(1, 0)), static_cast<int>(proj_points.at<double>(1, 1)));
-
-    cv::Mat_<double> mesh_1 = (cv::Mat_<double>(2, 3) << points_right[0].x, points_right[0].y, points_right[0].z, points_right[1].x, points_right[1].y, points_right[1].z);
-    LandmarkDetector::Project(proj_points, mesh_1, fx, fy, cx, cy);
-    //    line(img, cv::Point(proj_points.at<double>(0, 0), proj_points.at<double>(0, 1)), cv::Point(proj_points.at<double>(1, 0), proj_points.at<double>(1, 1)), cv::Scalar(110, 220, 0), 2, 8);
-    fprintf(fd, ";%05d;%05d", static_cast<int>(proj_points.at<double>(0, 0)), static_cast<int>(proj_points.at<double>(0, 1)));
-    fprintf(fd, ";%05d;%05d", static_cast<int>(proj_points.at<double>(1, 0)), static_cast<int>(proj_points.at<double>(1, 1)));
+    __DestroyContext(ctx);
 }
 
 BOOL WINAPI

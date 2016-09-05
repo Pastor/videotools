@@ -1,24 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
 using Emgu.CV;
 using Emgu.CV.Structure;
 
-namespace CaptureVideo.Library
+namespace OfPackage.Library
 {
-    internal static class Native
+    public static class Native
     {
         private const string LibraryName = @"OpenFaceWrap.dll";
 
         #region CreateSession
         [DllImport(LibraryName, EntryPoint = "create_wrap", SetLastError = true, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-        internal static extern void Create(string modelFile);
+        public static extern void Create(string modelFile);
         #endregion
 
         #region DestroySession
         [DllImport(LibraryName, EntryPoint = "destroy_wrap", SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
-        internal static extern void Destroy();
+        public static extern void Destroy();
         #endregion
 
         #region ProcessSession
@@ -33,7 +31,7 @@ namespace CaptureVideo.Library
             public int y;
         }
 
-        internal enum ProcessResult
+        public enum ProcessResult
         {
             Error,
             EmptyImage,
@@ -41,7 +39,7 @@ namespace CaptureVideo.Library
             Success
         }
 
-        internal static string ToString(ProcessResult result)
+        public static string ToString(ProcessResult result)
         {
             switch (result) {
                 case ProcessResult.EmptyImage:
@@ -64,7 +62,7 @@ namespace CaptureVideo.Library
             int outSize;
             int result;
 
-            using (var i = image.ToImage<Bgra, byte>()) {
+            using (var i = image.ToImage<Bgr, byte>()) {
                 result = Process(i.Ptr, out outPtr, out outSize);
             }
             points = new SessionPoint[outSize];
