@@ -55,6 +55,9 @@ namespace CaptureVideo.Library
             }
         }
 
+        private static readonly int Size = Marshal.SizeOf(new SessionPoint());
+        private static readonly Type Type = typeof (SessionPoint);
+
         public static ProcessResult Process(Mat image, out SessionPoint[] points)
         {
             IntPtr outPtr;
@@ -65,9 +68,8 @@ namespace CaptureVideo.Library
                 result = Process(i.Ptr, out outPtr, out outSize);
             }
             points = new SessionPoint[outSize];
-            var size = Marshal.SizeOf(new SessionPoint());
             for (var i = 0; i < outSize; i++) {
-                points[i] = (SessionPoint)Marshal.PtrToStructure(new IntPtr(outPtr.ToInt64() + (i * size)), typeof(SessionPoint));
+                points[i] = (SessionPoint)Marshal.PtrToStructure(new IntPtr(outPtr.ToInt64() + (i * Size)), Type);
             }
             switch (result) {
                 case 1:

@@ -49,6 +49,7 @@ namespace CaptureVideo
                     var result = Native.Process(frame, out points);
                     videoImage.Image = new Bitmap(frame.Bitmap);
                     lblDetected.Text = Native.ToString(result);
+                    lblDetected.Invalidate();
                 }
             };
             lblDetected.Text = @"Не найдено";
