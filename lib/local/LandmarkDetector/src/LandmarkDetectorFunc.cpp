@@ -328,7 +328,7 @@ bool LandmarkDetector::DetectLandmarksInVideo(const cv::Mat_<uchar> &grayscale_i
 
 	// This is used for both detection (if it the tracking has not been initialised yet) or if the tracking failed (however we do this every n frames, for speed)
 	// This also has the effect of an attempt to reinitialise just after the tracking has failed, which is useful during large motions
-	if((!clnf_model.tracking_initialised && (clnf_model.failures_in_a_row + 1) % (params.reinit_video_every * 6) == 0) 
+	if((params.reinit_video_every > 0 && !clnf_model.tracking_initialised && (clnf_model.failures_in_a_row + 1) % (params.reinit_video_every * 6) == 0) 
 		|| (clnf_model.tracking_initialised && !clnf_model.detection_success && params.reinit_video_every > 0 && clnf_model.failures_in_a_row % params.reinit_video_every == 0))
 	{
 

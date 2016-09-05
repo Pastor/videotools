@@ -19,33 +19,33 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{C6379CC8-86A5-4E96-8C2D-BDB77A4F5B65}</ProjectGuid>
+    <ProjectGuid>{51488919-B567-427F-8D98-DB3D9CF66097}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>OpenFace</RootNamespace>
+    <RootNamespace>VideoTools</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -56,46 +56,52 @@
   </ImportGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\3rdParty\boost\boost.props" />
-    <Import Project="..\..\3rdParty\dlib\dlib.props" />
-    <Import Project="..\..\3rdParty\tbb\tbb.props" />
-    <Import Project="..\..\3rdParty\OpenCV3.1\openCV3.1.props" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\3rdParty\boost\boost.props" />
-    <Import Project="..\..\3rdParty\dlib\dlib.props" />
-    <Import Project="..\..\3rdParty\tbb\tbb.props" />
-    <Import Project="..\..\3rdParty\OpenCV3.1\openCV3.1.props" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\3rdParty\dlib\dlib.props" />
-    <Import Project="..\..\3rdParty\OpenCV3.1\openCV3.1.props" />
-    <Import Project="..\..\3rdParty\boost\boost_d.props" />
-    <Import Project="..\..\3rdParty\tbb\tbb_d.props" />
+    <Import Project="..\..\lib\3rdParty\dlib\dlib.props" />
+    <Import Project="..\..\lib\3rdParty\OpenCV3.1\openCV3.1.props" />
+    <Import Project="..\..\lib\3rdParty\boost\boost_d.props" />
+    <Import Project="..\..\lib\3rdParty\tbb\tbb_d.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\3rdParty\dlib\dlib.props" />
-    <Import Project="..\..\3rdParty\OpenCV3.1\openCV3.1.props" />
-    <Import Project="..\..\3rdParty\boost\boost_d.props" />
-    <Import Project="..\..\3rdParty\tbb\tbb_d.props" />
+    <Import Project="..\..\lib\3rdParty\dlib\dlib.props" />
+    <Import Project="..\..\lib\3rdParty\OpenCV3.1\openCV3.1.props" />
+    <Import Project="..\..\lib\3rdParty\boost\boost_d.props" />
+    <Import Project="..\..\lib\3rdParty\tbb\tbb_d.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\lib\3rdParty\boost\boost.props" />
+    <Import Project="..\..\lib\3rdParty\dlib\dlib.props" />
+    <Import Project="..\..\lib\3rdParty\tbb\tbb.props" />
+    <Import Project="..\..\lib\3rdParty\OpenCV3.1\openCV3.1.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\lib\3rdParty\boost\boost.props" />
+    <Import Project="..\..\lib\3rdParty\dlib\dlib.props" />
+    <Import Project="..\..\lib\3rdParty\tbb\tbb.props" />
+    <Import Project="..\..\lib\3rdParty\OpenCV3.1\openCV3.1.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(VC_IncludePath);$(SolutionDir)\lib\local\ToolsCommon;$(SolutionDir)/lib/3rdParty/sqlite3;$(SolutionDir)\lib\local\LandmarkDetector\include;$(SolutionDir)\lib\local\FaceAnalyser\include;$(WindowsSDK_IncludePath);</IncludePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(VC_IncludePath);$(SolutionDir)\lib\local\ToolsCommon;$(SolutionDir)/lib/3rdParty/sqlite3;$(SolutionDir)\lib\local\LandmarkDetector\include;$(SolutionDir)\lib\local\FaceAnalyser\include;$(WindowsSDK_IncludePath);</IncludePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(VC_IncludePath);$(SolutionDir)\lib\local\ToolsCommon;$(SolutionDir)/lib/3rdParty/sqlite3;$(SolutionDir)\lib\local\LandmarkDetector\include;$(SolutionDir)\lib\local\FaceAnalyser\include;$(WindowsSDK_IncludePath);</IncludePath>
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)\lib\local\ToolsCommon;$(SolutionDir)/lib/3rdParty/sqlite3;$(SolutionDir)\lib\plugins\OpenFaceWrap;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(VC_IncludePath);$(SolutionDir)\lib\local\ToolsCommon;$(SolutionDir)/lib/3rdParty/sqlite3;$(SolutionDir)\lib\local\LandmarkDetector\include;$(SolutionDir)\lib\local\FaceAnalyser\include;$(WindowsSDK_IncludePath);</IncludePath>
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)\lib\local\ToolsCommon;$(SolutionDir)/lib/3rdParty/sqlite3</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)\lib\local\ToolsCommon;$(SolutionDir)/lib/3rdParty/sqlite3;$(SolutionDir)\lib\plugins\OpenFaceWrap</IncludePath>
+    <LibraryPath>$(SolutionDir)\Release;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)\lib\local\ToolsCommon;$(SolutionDir)/lib/3rdParty/sqlite3</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -103,15 +109,18 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;OPENFACE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>tbb_debug.lib;LandmarkDetector.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>OpenFaceWrap.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Manifest>
+      <AdditionalManifestFiles>
+      </AdditionalManifestFiles>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -119,14 +128,16 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;OPENFACE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>tbb_debug.lib;;LandmarkDetector.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Manifest>
+      <AdditionalManifestFiles>manifest</AdditionalManifestFiles>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -136,17 +147,20 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;OPENFACE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>opencv_world310.lib;LandMarkDetector.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>OpenFaceWrap.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Manifest>
+      <AdditionalManifestFiles>
+      </AdditionalManifestFiles>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -156,7 +170,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;OPENFACE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
@@ -164,38 +178,28 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>opencv_world310.lib;LandmarkDetector.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Manifest>
+      <AdditionalManifestFiles>manifest</AdditionalManifestFiles>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\3rdParty\dlib\dlib.vcxproj">
-      <Project>{b47a5f12-2567-44e9-ae49-35763ec82149}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\3rdParty\sqlite3\sqlite3.vcxproj">
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\lib\3rdParty\sqlite3\sqlite3.vcxproj">
       <Project>{27557243-c165-42ff-a273-7706feb6f4a4}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\local\FaceAnalyser\FaceAnalyser.vcxproj">
-      <Project>{0e7fc556-0e80-45ea-a876-dde4c2fedcd7}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\local\LandmarkDetector\LandmarkDetector.vcxproj">
-      <Project>{bdc1d107-de17-4705-8e7b-cdde8bfb2bf8}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\local\ToolsCommon\ToolsCommon.vcxproj">
+    <ProjectReference Include="..\..\lib\local\ToolsCommon\ToolsCommon.vcxproj">
       <Project>{7398d18a-c7b1-4d83-bf65-4661a66d4f4f}</Project>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="wrap.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="wrap.h" />
+    <ProjectReference Include="..\..\lib\plugins\OpenFaceWrap\OpenFaceWrap.vcxproj">
+      <Project>{c6379cc8-86a5-4e96-8c2d-bdb77a4f5b65}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
-  <Target Name="AfterBuild">
-    <Copy SourceFiles="$(SolutionDir)\$(Configuration)\$(TargetName)$(TargetExt)" DestinationFolder="$(OutputPath)\plugins" ContinueOnError="true" />
-    <Copy SourceFiles="$(SolutionDir)lib\local\LandmarkDetector\model" DestinationFolder="$(OutDir)model" ContinueOnError="true" />
-    <Copy SourceFiles="$(SolutionDir)lib\3rdParty\OpenCV3.1\classifiers" DestinationFolder="$(OutDir)classifiers" ContinueOnError="true" />
-  </Target>
 </Project>

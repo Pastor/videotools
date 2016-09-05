@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dlib", "lib\3rdParty\dlib\dlib.vcxproj", "{B47A5F12-2567-44E9-AE49-35763EC82149}"
 EndProject
@@ -51,6 +51,12 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CaptureVideo", "net\CaptureVideo\CaptureVideo.csproj", "{DC69E29B-7524-4261-802A-776FC2BEF57F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Net", "Net", "{97ABE9DE-28B7-4CA8-B707-B6B0A3323D75}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WrapTests", "src\WrapTests\WrapTests.vcxproj", "{51488919-B567-427F-8D98-DB3D9CF66097}"
+	ProjectSection(ProjectDependencies) = postProject
+		{27557243-C165-42FF-A273-7706FEB6F4A4} = {27557243-C165-42FF-A273-7706FEB6F4A4}
+		{7398D18A-C7B1-4D83-BF65-4661A66D4F4F} = {7398D18A-C7B1-4D83-BF65-4661A66D4F4F}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -214,6 +220,16 @@ Global
 		{DC69E29B-7524-4261-802A-776FC2BEF57F}.Release|Win32.Build.0 = Release|Any CPU
 		{DC69E29B-7524-4261-802A-776FC2BEF57F}.Release|x64.ActiveCfg = Release|Any CPU
 		{DC69E29B-7524-4261-802A-776FC2BEF57F}.Release|x64.Build.0 = Release|Any CPU
+		{51488919-B567-427F-8D98-DB3D9CF66097}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{51488919-B567-427F-8D98-DB3D9CF66097}.Debug|Win32.ActiveCfg = Debug|Win32
+		{51488919-B567-427F-8D98-DB3D9CF66097}.Debug|Win32.Build.0 = Debug|Win32
+		{51488919-B567-427F-8D98-DB3D9CF66097}.Debug|x64.ActiveCfg = Debug|x64
+		{51488919-B567-427F-8D98-DB3D9CF66097}.Debug|x64.Build.0 = Debug|x64
+		{51488919-B567-427F-8D98-DB3D9CF66097}.Release|Any CPU.ActiveCfg = Release|Win32
+		{51488919-B567-427F-8D98-DB3D9CF66097}.Release|Win32.ActiveCfg = Release|Win32
+		{51488919-B567-427F-8D98-DB3D9CF66097}.Release|Win32.Build.0 = Release|Win32
+		{51488919-B567-427F-8D98-DB3D9CF66097}.Release|x64.ActiveCfg = Release|x64
+		{51488919-B567-427F-8D98-DB3D9CF66097}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -234,5 +250,6 @@ Global
 		{C6379CC8-86A5-4E96-8C2D-BDB77A4F5B64} = {A22FCCBB-FA40-4A42-B836-87575DA7A420}
 		{C6379CC8-86A5-4E96-8C2D-BDB77A4F5B65} = {A22FCCBB-FA40-4A42-B836-87575DA7A420}
 		{DC69E29B-7524-4261-802A-776FC2BEF57F} = {97ABE9DE-28B7-4CA8-B707-B6B0A3323D75}
+		{51488919-B567-427F-8D98-DB3D9CF66097} = {9961DDAC-BE6E-4A6E-8EEF-FFC7D67BD631}
 	EndGlobalSection
 EndGlobal
