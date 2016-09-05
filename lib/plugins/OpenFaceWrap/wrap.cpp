@@ -77,6 +77,7 @@ create_wrap(const char * const modelPath)
     __Get(&ctx);
     destroy_wrap();
     ctx->clnf_model = new LandmarkDetector::CLNF(modelPath);
+    ctx->det_params = LandmarkDetector::FaceModelParameters();
     ctx->det_params.track_gaze = true;
     fprintf(ctx->fd, "START\n");
     fflush(ctx->fd);
