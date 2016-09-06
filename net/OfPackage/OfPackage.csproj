@@ -71,6 +71,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Library\Native.cs" />
+    <Compile Include="neuro.cs" />
+    <Compile Include="Neutroncalc.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

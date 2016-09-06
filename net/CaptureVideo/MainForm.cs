@@ -15,6 +15,7 @@ using System.Threading;
 using System.Windows.Threading;
 using Emgu.CV;
 using Emgu.CV.Structure;
+using OfPackage;
 using OfPackage.Library;
 
 
@@ -27,6 +28,12 @@ namespace CaptureVideo
         private readonly DispatcherTimer _timer = new DispatcherTimer();
         private readonly DispatcherTimer _capture = new DispatcherTimer();
         private bool _initialized = false;
+        private readonly Neutroncalc _calc = new Neutroncalc();
+
+        private readonly double[] _x = new double[68];
+        private readonly double[] _y = new double[68];
+
+        private readonly string _modelFileName;
 
         public MainForm()
         {
@@ -52,9 +59,24 @@ namespace CaptureVideo
                     var result = Native.Process(frame, out points);
                     lblDetected.Text = Native.ToString(result);
                     lblDetected.Invalidate();
+                    for (var i = 0; i < points.Length; i++) {
+                        var point = points[i];
+                        _x[i] = point.x;
+                        _y[i] = point.y;
+                    }
+                    _calc.calcEmo2d(_x, _y);
+                    /** */
+                    pNone.Value = (int)Convert.ToSingle(_calc.Emo[0]) * 100;
+                    pAnger.Value = (int)Convert.ToSingle(_calc.Emo[1]) * 100;
+                    pDisgust.Value = (int)Convert.ToSingle(_calc.Emo[2]) * 100;
+                    pFear.Value = (int)Convert.ToSingle(_calc.Emo[3]) * 100;
+                    pJoy.Value = (int)Convert.ToSingle(_calc.Emo[4]) * 100;
+                    pSorrow.Value = (int)Convert.ToSingle(_calc.Emo[5]) * 100;
+                    pSurprise.Value = (int)Convert.ToSingle(_calc.Emo[6]) * 100;
                 }
             };
             lblDetected.Text = @"";
+            _modelFileName = Directory.GetCurrentDirectory() + @"\model\main_clm_general.txt";
         }
 
         private void DeInitialize()
@@ -87,6 +109,12 @@ namespace CaptureVideo
 
         private void btnStart_Click(object sender, EventArgs e)
         {
+
+            if (!File.Exists(_modelFileName)) {
+                MessageBox.Show(this, $@"Файл модели {_modelFileName} не найден", @"Предупреждение", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+                ;
+            }
             _camera.Start();
             btnStart.Enabled = false;
             btnComplete.Enabled = true;
@@ -94,7 +122,7 @@ namespace CaptureVideo
             if (!_initialized) {
                 lblInformation.Text = @"Запуск OpenFace...";
                 lblInformation.Invalidate();
-                Native.Create(@"D:\GitHub\videotools\Debug\model\main_clm_general.txt");
+                Native.Create(_modelFileName);
                 _initialized = true;
             }
 
