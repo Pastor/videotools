@@ -13,6 +13,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Threading;
 using System.Windows.Threading;
+using DirectShowLib;
 using Emgu.CV;
 using Emgu.CV.Structure;
 using OfPackage;
@@ -115,7 +116,8 @@ namespace CaptureVideo
                 return;
                 ;
             }
-            _camera.Start();
+            if (!_camera.Start(this))
+                return;
             btnStart.Enabled = false;
             btnComplete.Enabled = true;
 
@@ -193,17 +195,33 @@ namespace CaptureVideo
         public bool HasNext => _capture != null && _capture.Grab();
 
 
-        public void Reset()
+        public bool Reset(IWin32Window window)
         {
             lock (_locker) {
                 Close();
-                Start();
+                return Start(window);
             }
         }
 
-        public void Start()
+        public bool Start(IWin32Window window)
         {
-            _capture = new Capture(_deviceNo);
+            if (VideoDevice.HasDevice()) {
+                _capture = new Capture(_deviceNo);
+            } else {
+                var d = new OpenFileDialog {
+                    CheckFileExists = true,
+                    InitialDirectory = Directory.GetCurrentDirectory(),
+                    Filter = @"AVI|*.avi|MPEG|*.mpeg;*.mpg;*.mp4|XDIV|*.xdiv"
+                };
+                var ret = d.ShowDialog(window);
+                if (ret == DialogResult.Yes || ret == DialogResult.OK) {
+                    var filename = d.FileName;
+                    _capture = new Capture(filename);
+                } else {
+                    return false;
+                }
+            }
+            return true;
         }
 
         public void Close()
@@ -216,6 +234,15 @@ namespace CaptureVideo
         public void Dispose()
         {
             _capture?.Dispose();
+        }
+    }
+
+    internal static class VideoDevice
+    {
+        internal static bool HasDevice()
+        {
+            var list = DsDevice.GetDevicesOfCat(FilterCategory.VideoInputDevice);
+            return list.Length > 0;
         }
     }
 }
