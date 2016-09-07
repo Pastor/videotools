@@ -54,12 +54,19 @@ namespace CaptureVideo
                     if (!_camera.HasNext) return;
                     Native.SessionPoint[] points;
                     var frame = _camera.Frame;
+                    if (frame == null)
+                        return;
                     videoImage.Image?.Dispose();
-                    videoImage.Image = new Bitmap(frame.Bitmap);
-                    videoImage.Invalidate();
+
                     var result = Native.Process(frame, out points);
                     lblDetected.Text = Native.ToString(result);
                     lblDetected.Invalidate();
+                    var bitmap = new Bitmap(frame.Bitmap);
+                    if (cbShowDots.Checked) {
+                        DrawDots(bitmap, points);
+                    }
+                    videoImage.Image = bitmap;
+                    videoImage.Invalidate();
                     for (var i = 0; i < points.Length; i++) {
                         var point = points[i];
                         _x[i] = point.x;
@@ -76,8 +83,27 @@ namespace CaptureVideo
                     pSurprise.Value = (int)Convert.ToSingle(_calc.Emo[6]) * 100;
                 }
             };
-            lblDetected.Text = @"";
+            lblDetected.Text = @"Лицо не найдено";
             _modelFileName = Directory.GetCurrentDirectory() + @"\model\main_clm_general.txt";
+
+            var color = Color.Green;
+            var text = @"Видеозахват";
+            if (!VideoDevice.HasDevice()) {
+                color = Color.DarkRed;
+                text = @"Видеофайл";
+            }
+            lblDevice.ForeColor = color;
+            lblDevice.Text = text;
+        }
+
+        private static void DrawDots(Image bitmap, IEnumerable<Native.SessionPoint> points)
+        {
+            var pen = new Pen(Color.Red, 2);
+            var g = Graphics.FromImage(bitmap);
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            foreach (var point in points) {
+                g.DrawEllipse(pen, point.x, point.y, 2, 2);
+            }
         }
 
         private void DeInitialize()
@@ -122,7 +148,7 @@ namespace CaptureVideo
             btnComplete.Enabled = true;
 
             if (!_initialized) {
-                lblInformation.Text = @"Запуск OpenFace...";
+                lblInformation.Text = @"Запуск зависимостей ...";
                 lblInformation.Invalidate();
                 Native.Create(_modelFileName);
                 _initialized = true;

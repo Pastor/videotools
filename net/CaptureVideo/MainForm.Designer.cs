@@ -49,6 +49,8 @@
             this.label3 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
+            this.cbShowDots = new System.Windows.Forms.CheckBox();
+            this.lblDevice = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.videoImage)).BeginInit();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
@@ -252,11 +254,32 @@
             this.label1.TabIndex = 0;
             this.label1.Text = "Нет";
             // 
+            // cbShowDots
+            // 
+            this.cbShowDots.AutoSize = true;
+            this.cbShowDots.Location = new System.Drawing.Point(594, 229);
+            this.cbShowDots.Name = "cbShowDots";
+            this.cbShowDots.Size = new System.Drawing.Size(143, 15);
+            this.cbShowDots.TabIndex = 8;
+            this.cbShowDots.Text = "Отображение точек";
+            this.cbShowDots.UseVisualStyleBackColor = true;
+            // 
+            // lblDevice
+            // 
+            this.lblDevice.Location = new System.Drawing.Point(594, 374);
+            this.lblDevice.Name = "lblDevice";
+            this.lblDevice.Size = new System.Drawing.Size(132, 16);
+            this.lblDevice.TabIndex = 9;
+            this.lblDevice.Text = "Устройство";
+            this.lblDevice.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 11F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(823, 399);
+            this.Controls.Add(this.lblDevice);
+            this.Controls.Add(this.cbShowDots);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.btnGC);
             this.Controls.Add(this.lblDetected);
@@ -272,6 +295,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.videoImage)).EndInit();
             this.groupBox1.ResumeLayout(false);
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -299,6 +323,8 @@
         private System.Windows.Forms.ProgressBar pFear;
         private System.Windows.Forms.ProgressBar pDisgust;
         private System.Windows.Forms.ProgressBar pAnger;
+        private System.Windows.Forms.CheckBox cbShowDots;
+        private System.Windows.Forms.Label lblDevice;
     }
 }
 
