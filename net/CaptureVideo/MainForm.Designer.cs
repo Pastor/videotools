@@ -29,7 +29,7 @@
         {
             this.videoImage = new System.Windows.Forms.PictureBox();
             this.lblMemory = new System.Windows.Forms.Label();
-            this.btnStart = new System.Windows.Forms.Button();
+            this.btnWeb = new System.Windows.Forms.Button();
             this.btnComplete = new System.Windows.Forms.Button();
             this.lblInformation = new System.Windows.Forms.Label();
             this.lblDetected = new System.Windows.Forms.Label();
@@ -51,8 +51,17 @@
             this.label1 = new System.Windows.Forms.Label();
             this.cbShowDots = new System.Windows.Forms.CheckBox();
             this.lblDevice = new System.Windows.Forms.Label();
+            this.btnFile = new System.Windows.Forms.Button();
+            this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.pNapNone = new System.Windows.Forms.ProgressBar();
+            this.label8 = new System.Windows.Forms.Label();
+            this.pNap1 = new System.Windows.Forms.ProgressBar();
+            this.label9 = new System.Windows.Forms.Label();
+            this.pNap2 = new System.Windows.Forms.ProgressBar();
+            this.label10 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.videoImage)).BeginInit();
             this.groupBox1.SuspendLayout();
+            this.groupBox2.SuspendLayout();
             this.SuspendLayout();
             // 
             // videoImage
@@ -66,52 +75,52 @@
             // 
             // lblMemory
             // 
-            this.lblMemory.Location = new System.Drawing.Point(732, 373);
+            this.lblMemory.Location = new System.Drawing.Point(748, 373);
             this.lblMemory.Name = "lblMemory";
             this.lblMemory.Size = new System.Drawing.Size(83, 15);
             this.lblMemory.TabIndex = 1;
             this.lblMemory.Text = "1000Т";
             this.lblMemory.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
-            // btnStart
+            // btnWeb
             // 
-            this.btnStart.Location = new System.Drawing.Point(732, 172);
-            this.btnStart.Name = "btnStart";
-            this.btnStart.Size = new System.Drawing.Size(81, 23);
-            this.btnStart.TabIndex = 2;
-            this.btnStart.Text = "Запуск";
-            this.btnStart.UseVisualStyleBackColor = true;
-            this.btnStart.Click += new System.EventHandler(this.btnStart_Click);
+            this.btnWeb.Location = new System.Drawing.Point(711, 265);
+            this.btnWeb.Name = "btnWeb";
+            this.btnWeb.Size = new System.Drawing.Size(57, 23);
+            this.btnWeb.TabIndex = 2;
+            this.btnWeb.Text = "Камера";
+            this.btnWeb.UseVisualStyleBackColor = true;
+            this.btnWeb.Click += new System.EventHandler(this.btnStart_Click);
             // 
             // btnComplete
             // 
-            this.btnComplete.Location = new System.Drawing.Point(645, 172);
+            this.btnComplete.Location = new System.Drawing.Point(648, 265);
             this.btnComplete.Name = "btnComplete";
-            this.btnComplete.Size = new System.Drawing.Size(81, 23);
+            this.btnComplete.Size = new System.Drawing.Size(57, 23);
             this.btnComplete.TabIndex = 3;
-            this.btnComplete.Text = "Остановка";
+            this.btnComplete.Text = "Стоп";
             this.btnComplete.UseVisualStyleBackColor = true;
             this.btnComplete.Click += new System.EventHandler(this.btnComplete_Click);
             // 
             // lblInformation
             // 
-            this.lblInformation.Location = new System.Drawing.Point(592, 211);
+            this.lblInformation.Location = new System.Drawing.Point(592, 304);
             this.lblInformation.Name = "lblInformation";
-            this.lblInformation.Size = new System.Drawing.Size(223, 14);
+            this.lblInformation.Size = new System.Drawing.Size(239, 15);
             this.lblInformation.TabIndex = 4;
             this.lblInformation.Text = "Информация";
             // 
             // lblDetected
             // 
-            this.lblDetected.Location = new System.Drawing.Point(592, 198);
+            this.lblDetected.Location = new System.Drawing.Point(592, 291);
             this.lblDetected.Name = "lblDetected";
-            this.lblDetected.Size = new System.Drawing.Size(223, 13);
+            this.lblDetected.Size = new System.Drawing.Size(239, 13);
             this.lblDetected.TabIndex = 5;
             this.lblDetected.Text = "Определение лица";
             // 
             // btnGC
             // 
-            this.btnGC.Location = new System.Drawing.Point(592, 172);
+            this.btnGC.Location = new System.Drawing.Point(592, 265);
             this.btnGC.Name = "btnGC";
             this.btnGC.Size = new System.Drawing.Size(33, 23);
             this.btnGC.TabIndex = 6;
@@ -137,14 +146,14 @@
             this.groupBox1.Controls.Add(this.label1);
             this.groupBox1.Location = new System.Drawing.Point(592, 12);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(221, 154);
+            this.groupBox1.Size = new System.Drawing.Size(239, 154);
             this.groupBox1.TabIndex = 7;
             this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "Напряженное состояние";
+            this.groupBox1.Text = "Эмоции";
             // 
             // pSurprise
             // 
-            this.pSurprise.Location = new System.Drawing.Point(95, 126);
+            this.pSurprise.Location = new System.Drawing.Point(114, 126);
             this.pSurprise.Name = "pSurprise";
             this.pSurprise.Size = new System.Drawing.Size(114, 16);
             this.pSurprise.Step = 1;
@@ -152,7 +161,7 @@
             // 
             // pSorrow
             // 
-            this.pSorrow.Location = new System.Drawing.Point(95, 108);
+            this.pSorrow.Location = new System.Drawing.Point(114, 108);
             this.pSorrow.Name = "pSorrow";
             this.pSorrow.Size = new System.Drawing.Size(114, 16);
             this.pSorrow.Step = 1;
@@ -160,7 +169,7 @@
             // 
             // pJoy
             // 
-            this.pJoy.Location = new System.Drawing.Point(95, 90);
+            this.pJoy.Location = new System.Drawing.Point(114, 90);
             this.pJoy.Name = "pJoy";
             this.pJoy.Size = new System.Drawing.Size(114, 16);
             this.pJoy.Step = 1;
@@ -168,7 +177,7 @@
             // 
             // pFear
             // 
-            this.pFear.Location = new System.Drawing.Point(95, 72);
+            this.pFear.Location = new System.Drawing.Point(114, 72);
             this.pFear.Name = "pFear";
             this.pFear.Size = new System.Drawing.Size(114, 16);
             this.pFear.Step = 1;
@@ -176,7 +185,7 @@
             // 
             // pDisgust
             // 
-            this.pDisgust.Location = new System.Drawing.Point(95, 54);
+            this.pDisgust.Location = new System.Drawing.Point(114, 54);
             this.pDisgust.Name = "pDisgust";
             this.pDisgust.Size = new System.Drawing.Size(114, 16);
             this.pDisgust.Step = 1;
@@ -184,7 +193,7 @@
             // 
             // pAnger
             // 
-            this.pAnger.Location = new System.Drawing.Point(95, 36);
+            this.pAnger.Location = new System.Drawing.Point(114, 36);
             this.pAnger.Name = "pAnger";
             this.pAnger.Size = new System.Drawing.Size(114, 16);
             this.pAnger.Step = 1;
@@ -192,7 +201,7 @@
             // 
             // pNone
             // 
-            this.pNone.Location = new System.Drawing.Point(95, 18);
+            this.pNone.Location = new System.Drawing.Point(114, 18);
             this.pNone.Name = "pNone";
             this.pNone.Size = new System.Drawing.Size(114, 16);
             this.pNone.Step = 1;
@@ -257,7 +266,7 @@
             // cbShowDots
             // 
             this.cbShowDots.AutoSize = true;
-            this.cbShowDots.Location = new System.Drawing.Point(594, 229);
+            this.cbShowDots.Location = new System.Drawing.Point(594, 322);
             this.cbShowDots.Name = "cbShowDots";
             this.cbShowDots.Size = new System.Drawing.Size(143, 15);
             this.cbShowDots.TabIndex = 8;
@@ -268,16 +277,94 @@
             // 
             this.lblDevice.Location = new System.Drawing.Point(594, 374);
             this.lblDevice.Name = "lblDevice";
-            this.lblDevice.Size = new System.Drawing.Size(132, 16);
+            this.lblDevice.Size = new System.Drawing.Size(148, 14);
             this.lblDevice.TabIndex = 9;
             this.lblDevice.Text = "Устройство";
             this.lblDevice.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // btnFile
+            // 
+            this.btnFile.Location = new System.Drawing.Point(774, 265);
+            this.btnFile.Name = "btnFile";
+            this.btnFile.Size = new System.Drawing.Size(57, 23);
+            this.btnFile.TabIndex = 10;
+            this.btnFile.Text = "Файл";
+            this.btnFile.UseVisualStyleBackColor = true;
+            this.btnFile.Click += new System.EventHandler(this.btnFile_Click);
+            // 
+            // groupBox2
+            // 
+            this.groupBox2.Controls.Add(this.pNap2);
+            this.groupBox2.Controls.Add(this.label10);
+            this.groupBox2.Controls.Add(this.pNap1);
+            this.groupBox2.Controls.Add(this.label9);
+            this.groupBox2.Controls.Add(this.pNapNone);
+            this.groupBox2.Controls.Add(this.label8);
+            this.groupBox2.Location = new System.Drawing.Point(593, 173);
+            this.groupBox2.Name = "groupBox2";
+            this.groupBox2.Size = new System.Drawing.Size(238, 86);
+            this.groupBox2.TabIndex = 11;
+            this.groupBox2.TabStop = false;
+            this.groupBox2.Text = "Напряженное состояние";
+            // 
+            // pNapNone
+            // 
+            this.pNapNone.ForeColor = System.Drawing.Color.Green;
+            this.pNapNone.Location = new System.Drawing.Point(113, 17);
+            this.pNapNone.Name = "pNapNone";
+            this.pNapNone.Size = new System.Drawing.Size(114, 16);
+            this.pNapNone.Step = 1;
+            this.pNapNone.TabIndex = 15;
+            // 
+            // label8
+            // 
+            this.label8.Location = new System.Drawing.Point(6, 23);
+            this.label8.Name = "label8";
+            this.label8.Size = new System.Drawing.Size(92, 10);
+            this.label8.TabIndex = 14;
+            this.label8.Text = "Нейтральное";
+            // 
+            // pNap1
+            // 
+            this.pNap1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(64)))), ((int)(((byte)(0)))));
+            this.pNap1.Location = new System.Drawing.Point(113, 35);
+            this.pNap1.Name = "pNap1";
+            this.pNap1.Size = new System.Drawing.Size(114, 16);
+            this.pNap1.Step = 1;
+            this.pNap1.TabIndex = 17;
+            // 
+            // label9
+            // 
+            this.label9.Location = new System.Drawing.Point(6, 38);
+            this.label9.Name = "label9";
+            this.label9.Size = new System.Drawing.Size(101, 13);
+            this.label9.TabIndex = 16;
+            this.label9.Text = "Напряжение №1";
+            // 
+            // pNap2
+            // 
+            this.pNap2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.pNap2.Location = new System.Drawing.Point(113, 53);
+            this.pNap2.Name = "pNap2";
+            this.pNap2.Size = new System.Drawing.Size(114, 16);
+            this.pNap2.Step = 1;
+            this.pNap2.TabIndex = 19;
+            // 
+            // label10
+            // 
+            this.label10.Location = new System.Drawing.Point(7, 54);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(100, 16);
+            this.label10.TabIndex = 18;
+            this.label10.Text = "Напряжение №2";
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 11F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(823, 399);
+            this.ClientSize = new System.Drawing.Size(837, 399);
+            this.Controls.Add(this.groupBox2);
+            this.Controls.Add(this.btnFile);
             this.Controls.Add(this.lblDevice);
             this.Controls.Add(this.cbShowDots);
             this.Controls.Add(this.groupBox1);
@@ -285,7 +372,7 @@
             this.Controls.Add(this.lblDetected);
             this.Controls.Add(this.lblInformation);
             this.Controls.Add(this.btnComplete);
-            this.Controls.Add(this.btnStart);
+            this.Controls.Add(this.btnWeb);
             this.Controls.Add(this.lblMemory);
             this.Controls.Add(this.videoImage);
             this.Font = new System.Drawing.Font("Lucida Console", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
@@ -294,6 +381,7 @@
             this.Text = "Захват видео";
             ((System.ComponentModel.ISupportInitialize)(this.videoImage)).EndInit();
             this.groupBox1.ResumeLayout(false);
+            this.groupBox2.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -303,7 +391,7 @@
 
         private System.Windows.Forms.PictureBox videoImage;
         private System.Windows.Forms.Label lblMemory;
-        private System.Windows.Forms.Button btnStart;
+        private System.Windows.Forms.Button btnWeb;
         private System.Windows.Forms.Button btnComplete;
         private System.Windows.Forms.Label lblInformation;
         private System.Windows.Forms.Label lblDetected;
@@ -325,6 +413,14 @@
         private System.Windows.Forms.ProgressBar pAnger;
         private System.Windows.Forms.CheckBox cbShowDots;
         private System.Windows.Forms.Label lblDevice;
+        private System.Windows.Forms.Button btnFile;
+        private System.Windows.Forms.GroupBox groupBox2;
+        private System.Windows.Forms.ProgressBar pNap2;
+        private System.Windows.Forms.Label label10;
+        private System.Windows.Forms.ProgressBar pNap1;
+        private System.Windows.Forms.Label label9;
+        private System.Windows.Forms.ProgressBar pNapNone;
+        private System.Windows.Forms.Label label8;
     }
 }
 

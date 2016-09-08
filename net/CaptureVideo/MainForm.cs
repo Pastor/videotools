@@ -54,8 +54,12 @@ namespace CaptureVideo
                     if (!_camera.HasNext) return;
                     Native.SessionPoint[] points;
                     var frame = _camera.Frame;
-                    if (frame == null)
+                    if (frame == null) {
+                        if (_camera.Eof && btnComplete.Enabled) {
+                            btnComplete.PerformClick();
+                        }
                         return;
+                    }
                     videoImage.Image?.Dispose();
 
                     var result = Native.Process(frame, out points);
@@ -81,19 +85,25 @@ namespace CaptureVideo
                     pJoy.Value = (int)Convert.ToSingle(_calc.Emo[4]) * 100;
                     pSorrow.Value = (int)Convert.ToSingle(_calc.Emo[5]) * 100;
                     pSurprise.Value = (int)Convert.ToSingle(_calc.Emo[6]) * 100;
+
+                    pNapNone.Value = (int)Convert.ToSingle(_calc.Napr[0]) * 100;
+                    pNap1.Value = (int)Convert.ToSingle(_calc.Napr[1]) * 100;
+                    pNap2.Value = (int)Convert.ToSingle(_calc.Napr[2]) * 100;
                 }
             };
             lblDetected.Text = @"Лицо не найдено";
             _modelFileName = Directory.GetCurrentDirectory() + @"\model\main_clm_general.txt";
 
             var color = Color.Green;
-            var text = @"Видеозахват";
+            var text = @"Камера/Файл";
             if (!VideoDevice.HasDevice()) {
                 color = Color.DarkRed;
-                text = @"Видеофайл";
+                text = @"Файл";
             }
             lblDevice.ForeColor = color;
             lblDevice.Text = text;
+            btnWeb.Enabled = VideoDevice.HasDevice();
+            btnComplete.Enabled = false;
         }
 
         private static void DrawDots(Image bitmap, IEnumerable<Native.SessionPoint> points)
@@ -136,16 +146,16 @@ namespace CaptureVideo
 
         private void btnStart_Click(object sender, EventArgs e)
         {
-
             if (!File.Exists(_modelFileName)) {
                 MessageBox.Show(this, $@"Файл модели {_modelFileName} не найден", @"Предупреждение", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
-                ;
             }
-            if (!_camera.Start(this))
+            if (!_camera.StartWeb(this))
                 return;
-            btnStart.Enabled = false;
+            ClearProgresses();
+            btnWeb.Enabled = false;
             btnComplete.Enabled = true;
+            btnFile.Enabled = false;
 
             if (!_initialized) {
                 lblInformation.Text = @"Запуск зависимостей ...";
@@ -163,8 +173,9 @@ namespace CaptureVideo
         private void btnComplete_Click(object sender, EventArgs e)
         {
             lblDetected.Text = @"";
-            btnStart.Enabled = true;
+            btnWeb.Enabled = VideoDevice.HasDevice();
             btnComplete.Enabled = false;
+            btnFile.Enabled = true;
             lblInformation.Text = @"Закрывается камера";
             lblInformation.Invalidate();
             _camera.Close();
@@ -183,6 +194,48 @@ namespace CaptureVideo
         {
             GC.Collect();
             GC.WaitForFullGCApproach();
+        }
+
+        private void btnFile_Click(object sender, EventArgs e)
+        {
+
+            if (!File.Exists(_modelFileName)) {
+                MessageBox.Show(this, $@"Файл модели {_modelFileName} не найден", @"Предупреждение", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            if (!_camera.StartFile(this))
+                return;
+            ClearProgresses();
+            btnFile.Enabled = false;
+            btnWeb.Enabled = false;
+            btnComplete.Enabled = true;
+
+            if (!_initialized) {
+                lblInformation.Text = @"Запуск зависимостей ...";
+                lblInformation.Invalidate();
+                Native.Create(_modelFileName);
+                _initialized = true;
+            }
+
+            _capture.Interval = new TimeSpan(300);
+            _capture.Start();
+            lblInformation.Text = @"Захват видео запущен";
+            lblInformation.Invalidate();
+        }
+
+        private void ClearProgresses()
+        {
+            pNone.Value = 0;
+            pAnger.Value = 0;
+            pDisgust.Value = 0;
+            pFear.Value = 0;
+            pJoy.Value = 0;
+            pSorrow.Value = 0;
+            pSurprise.Value = 0;
+
+            pNapNone.Value = 0;
+            pNap1.Value = 0;
+            pNap2.Value = 0;
         }
     }
 
@@ -209,6 +262,9 @@ namespace CaptureVideo
             }
         }
 
+        public bool Eof => _capture?.GetCaptureProperty(Emgu.CV.CvEnum.CapProp.FrameCount) ==
+                           _capture?.GetCaptureProperty(Emgu.CV.CvEnum.CapProp.PosFrames);
+
         public Mat Frame
         {
             get {
@@ -225,11 +281,28 @@ namespace CaptureVideo
         {
             lock (_locker) {
                 Close();
-                return Start(window);
+                return StartWeb(window);
             }
         }
 
-        public bool Start(IWin32Window window)
+        public bool StartFile(IWin32Window window)
+        {
+            var d = new OpenFileDialog {
+                CheckFileExists = true,
+                InitialDirectory = Directory.GetCurrentDirectory(),
+                Filter = @"AVI|*.avi|MPEG|*.mpeg;*.mpg;*.mp4|XDIV|*.xdiv"
+            };
+            var ret = d.ShowDialog(window);
+            if (ret == DialogResult.Yes || ret == DialogResult.OK) {
+                var filename = d.FileName;
+                _capture = new Capture(filename);
+            } else {
+                return false;
+            }
+            return true;
+        }
+
+        public bool StartWeb(IWin32Window window)
         {
             if (VideoDevice.HasDevice()) {
                 _capture = new Capture(_deviceNo);
